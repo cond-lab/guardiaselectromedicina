@@ -29,14 +29,14 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
   // A4 landscape: height=15840, margins 720 cada lado → contenido = 15840 - 1440 = 14400
   const TOTAL = 15000
 
-  const baseWidths = cols.map(c => {
-    if (c === 'averia') return 3000
-    if (c === 'acciones') return 3500
-    if (c === 'servicio') return 1800
-    if (c === 'fecha_aviso') return 1400
-    if (c === 'hora_aviso') return 1000
-    if (c === 'tecnico_nombre') return 1800
-    if (c === 'created_at') return 1800
+const baseWidths = cols.map(c => {
+    if (c === 'averia') return 3500
+    if (c === 'acciones') return 4000
+    if (c === 'servicio') return 2000
+    if (c === 'fecha_aviso') return 900
+    if (c === 'hora_aviso') return 700
+    if (c === 'tecnico_nombre') return 2000
+    if (c === 'created_at') return 900
     return 1500
   })
 
