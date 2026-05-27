@@ -46,11 +46,18 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
   })
 
   // Escalar para que sumen exactamente totalWidth
+// Escalar para que sumen exactamente totalWidth
   const sumBase = baseWidths.reduce((a, b) => a + b, 0)
   const scale = totalWidth / sumBase
-  const colWidths = baseWidths.map(w => Math.max(500, Math.floor(w * scale)))
-  const diff = totalWidth - colWidths.reduce((a, b) => a + b, 0)
-  colWidths[colWidths.length - 1] += diff
+  const colWidths = baseWidths.map(w => Math.floor(w * scale))
+  // Asegurar mínimo 400 y recalcular diferencia
+  const colWidthsSafe = colWidths.map(w => Math.max(400, w))
+  const sumSafe = colWidthsSafe.reduce((a, b) => a + b, 0)
+  // Si la suma supera el total, escalar de nuevo
+  const scale2 = totalWidth / sumSafe
+  const finalWidths = colWidthsSafe.map(w => Math.floor(w * scale2))
+  const diff2 = totalWidth - finalWidths.reduce((a, b) => a + b, 0)
+  finalWidths[finalWidths.length - 1] += diff2
 
   // Fila de cabecera
   const headerRow = new TableRow({
