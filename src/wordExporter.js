@@ -27,7 +27,7 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
   const cols = selectedColumns.filter(c => COLUMN_LABELS[c])
 
   // A4 landscape: height=15840, margins 720 cada lado → contenido = 15840 - 1440 = 14400
-  const TOTAL = 14400
+  const TOTAL = 15000
 
   const baseWidths = cols.map(c => {
     if (c === 'averia') return 3000
@@ -93,7 +93,7 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
       properties: {
         page: {
           size: { width: 12240, height: 15840, orientation: PageOrientation.LANDSCAPE },
-          margin: { top: 720, right: 720, bottom: 720, left: 720 }
+          margin: { top: 500, right: 400, bottom: 500, left: 400 }
         }
       },
       children: [
