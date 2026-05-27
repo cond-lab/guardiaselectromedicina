@@ -23,14 +23,12 @@ function formatValue(key, value) {
   return String(value)
 }
 
-const border = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }
-const borders = { top: border, bottom: border, left: border, right: border }
-
 export async function exportToWord(avisos, selectedColumns, dateLabel) {
   const cols = selectedColumns.filter(c => COLUMN_LABELS[c])
-  const totalWidth = 13920
 
-  // Calcular anchos proporcionales que sumen exactamente totalWidth
+  // A4 landscape: height=15840, margins 720 cada lado → contenido = 15840 - 1440 = 14400
+  const TOTAL = 14400
+
   const baseWidths = cols.map(c => {
     if (c === 'averia') return 3000
     if (c === 'acciones') return 3500
@@ -43,18 +41,17 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
   })
 
   const sumBase = baseWidths.reduce((a, b) => a + b, 0)
-  const W = baseWidths.map(w => Math.floor((w / sumBase) * totalWidth))
-  const diff = totalWidth - W.reduce((a, b) => a + b, 0)
-  W[W.length - 1] += diff
+  const W = baseWidths.map(w => Math.floor((w / sumBase) * TOTAL))
+  W[W.length - 1] += TOTAL - W.reduce((a, b) => a + b, 0)
 
-  const border2 = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }
-  const borders2 = { top: border2, bottom: border2, left: border2, right: border2 }
+  const brd = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }
+  const brds = { top: brd, bottom: brd, left: brd, right: brd }
 
   const headerRow = new TableRow({
     tableHeader: true,
     children: cols.map((col, i) =>
       new TableCell({
-        borders: borders2,
+        borders: brds,
         width: { size: W[i], type: WidthType.DXA },
         shading: { fill: '1B3A5C', type: ShadingType.CLEAR },
         margins: { top: 100, bottom: 100, left: 120, right: 120 },
@@ -71,7 +68,7 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
     new TableRow({
       children: cols.map((col, i) =>
         new TableCell({
-          borders: borders2,
+          borders: brds,
           width: { size: W[i], type: WidthType.DXA },
           shading: { fill: rowIdx % 2 === 0 ? 'FFFFFF' : 'F0F5FA', type: ShadingType.CLEAR },
           margins: { top: 80, bottom: 80, left: 120, right: 120 },
@@ -85,7 +82,7 @@ export async function exportToWord(avisos, selectedColumns, dateLabel) {
   )
 
   const table = new Table({
-    width: { size: totalWidth, type: WidthType.DXA },
+    width: { size: TOTAL, type: WidthType.DXA },
     columnWidths: W,
     rows: [headerRow, ...dataRows],
   })
