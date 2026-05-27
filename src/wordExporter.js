@@ -1,7 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign,
-  HeadingLevel, PageOrientation
+  PageOrientation
 } from 'docx'
 import { saveAs } from 'file-saver'
 
@@ -20,12 +20,8 @@ function formatValue(key, value) {
   if (key === 'created_at') {
     return new Date(value).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
   }
-  if (key === 'hora_aviso') {
-    return value.substring(0, 5) // HH:MM
-  }
-  if (key === 'fecha_aviso') {
-    return new Date(value + 'T00:00:00').toLocaleDateString('es-ES')
-  }
+  if (key === 'hora_aviso') return value.substring(0, 5)
+  if (key === 'fecha_aviso') return new Date(value + 'T00:00:00').toLocaleDateString('es-ES')
   return String(value)
 }
 
@@ -35,18 +31,26 @@ const borders = { top: border, bottom: border, left: border, right: border }
 export async function exportToWord(avisos, selectedColumns, dateLabel) {
   const cols = selectedColumns.filter(c => COLUMN_LABELS[c])
 
-  // Calcular anchos de columna (A4 landscape content width ~13920 DXA)
   const totalWidth = 13920
-  const colWidths = cols.map(c => {
-    if (c === 'averia') return Math.floor(totalWidth * 0.25)
-    if (c === 'acciones') return Math.floor(totalWidth * 0.30)
-    if (c === 'servicio') return Math.floor(totalWidth * 0.15)
-    return Math.floor(totalWidth * (1 / cols.length))
+
+  // Anchos base por columna
+  const baseWidths = cols.map(c => {
+    if (c === 'averia') return 3000
+    if (c === 'acciones') return 3500
+    if (c === 'servicio') return 1800
+    if (c === 'fecha_aviso') return 1400
+    if (c === 'hora_aviso') return 1000
+    if (c === 'tecnico_nombre') return 1800
+    if (c === 'created_at') return 1800
+    return 1500
   })
 
-  // Ajustar último para que sumen exacto
-  const sumWidths = colWidths.reduce((a, b) => a + b, 0)
-  colWidths[colWidths.length - 1] += totalWidth - sumWidths
+  // Escalar para que sumen exactamente totalWidth
+  const sumBase = baseWidths.reduce((a, b) => a + b, 0)
+  const scale = totalWidth / sumBase
+  const colWidths = baseWidths.map(w => Math.max(500, Math.floor(w * scale)))
+  const diff = totalWidth - colWidths.reduce((a, b) => a + b, 0)
+  colWidths[colWidths.length - 1] += diff
 
   // Fila de cabecera
   const headerRow = new TableRow({
