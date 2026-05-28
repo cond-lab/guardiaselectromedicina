@@ -55,7 +55,7 @@ const ADMIN_PASS   = 'Rafa20ali.'
 
 <script>
 // ═══ SUPABASE ════════════════════════════════════════════════════════════════
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+window.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ═══ WORD EXPORT ═════════════════════════════════════════════════════════════
 const COL_LABELS = {
