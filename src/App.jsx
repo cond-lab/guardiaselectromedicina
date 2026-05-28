@@ -18,49 +18,49 @@ const ALL_COLUMNS = [
   { key: 'created_at',     label: 'Registro' },
 ]
 
-// ─── Atoms ─────────────────────────────────────────────────────────────────────
+// ─── Componentes de Estilo Modernos ──────────────────────────────────────────
 function GlassCard({ children, className = '' }) {
-  return <div className={`glass glass-glow ${className}`}>{children}</div>
+  return <div className={`glass-card ${className}`}>{children}</div>
 }
 
 function PrimaryBtn({ children, onClick, disabled, className = '' }) {
   return (
-    <button onClick={onClick} disabled={disabled} className={`btn-primary btn-shimmer ${className}`}>
-      {children}
+    <button onClick={onClick} disabled={disabled} className={`btn-glow-primary ${className}`}>
+      <span>{children}</span>
     </button>
   )
 }
 
 function GhostBtn({ children, onClick, disabled, className = '' }) {
   return (
-    <button onClick={onClick} disabled={disabled} className={`btn-ghost ${className}`}>
+    <button onClick={onClick} disabled={disabled} className={`btn-glass-ghost ${className}`}>
       {children}
     </button>
   )
 }
 
 function Badge({ children, color = 'blue' }) {
-  return <span className={`badge badge-${color}`}>{children}</span>
+  return <span className={`modern-badge badge-${color}`}>{children}</span>
 }
 
 function Spinner() {
   return (
-    <div className="spinner-container">
-      <div className="spinner-ring" />
+    <div className="modern-spinner-zone">
+      <div className="spinner-core" />
     </div>
   )
 }
 
 function SectionTitle({ children }) {
   return (
-    <div className="section-title-container">
-      <h2 className="section-title-text">{children}</h2>
-      <div className="section-title-line" />
+    <div className="modern-title-area">
+      <h2>{children}</h2>
+      <div className="title-accent-bar" />
     </div>
   )
 }
 
-// ─── Login ─────────────────────────────────────────────────────────────────────
+// ─── Login Screen ─────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
@@ -70,39 +70,39 @@ function LoginScreen({ onLogin }) {
     setLoading(true)
     setTimeout(() => {
       if (pass === ADMIN_PASSWORD) { sessionStorage.setItem('guardias_admin', '1'); onLogin() }
-      else { setErr('Contraseña incorrecta'); setLoading(false) }
-    }, 350)
+      else { setErr('Contraseña de administrador incorrecta'); setLoading(false) }
+    }, 400)
   }
 
   return (
-    <div className="login-wrapper">
-      <div className="glass glass-glow fade-up login-card">
-        <div className="login-top-accent" />
+    <div className="modern-login-viewport">
+      <div className="glass-card login-glass-box fade-up">
+        <div className="login-logo-glow">🏥</div>
+        <h1>GUARDIAS EM</h1>
+        <p className="login-subtitle">Panel de Extracción Integral · Polygon</p>
 
-        <div className="login-header">
-          <div className="login-logo-box">🏥</div>
-          <div className="brand-title">GUARDIAS EM</div>
-          <div className="brand-subtitle">Panel de extracción · Polygon</div>
-        </div>
-
-        <div className="form-group">
-          <label>Contraseña de acceso</label>
-          <input type="password" value={pass}
-            className="input-glow"
+        <div className="input-group">
+          <label>Credencial de Acceso</label>
+          <input 
+            type="password" 
+            value={pass}
             onChange={e => { setPass(e.target.value); setErr('') }}
             onKeyDown={e => e.key === 'Enter' && go()}
-            placeholder="••••••••" autoFocus />
-          {err && <div className="error-text">{err}</div>}
+            placeholder="••••••••" 
+            autoFocus 
+          />
+          {err && <div className="login-error-msg">{err}</div>}
         </div>
-        <PrimaryBtn onClick={go} disabled={loading || !pass} className="w-full py-3">
-          {loading ? 'Verificando…' : 'ACCEDER →'}
+        
+        <PrimaryBtn onClick={go} disabled={loading || !pass} className="w-full mt-4">
+          {loading ? 'Validando Token…' : 'ENTRAR AL PANEL →'}
         </PrimaryBtn>
       </div>
     </div>
   )
 }
 
-// ─── Técnicos ──────────────────────────────────────────────────────────────────
+// ─── Gestión de Técnicos ──────────────────────────────────────────────────────
 function TecnicoManager() {
   const [tecnicos, setTecnicos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -127,7 +127,7 @@ function TecnicoManager() {
     const hash = await hashP(form.password)
     const { error } = await supabase.from('tecnicos').insert({ nombre: form.nombre, email: form.email.toLowerCase(), password_hash: hash })
     if (error) setMsg('Error: ' + error.message)
-    else { setMsg('✓ Técnico creado con éxito'); setForm({ nombre: '', email: '', password: '' }); load() }
+    else { setMsg('✓ Alta de técnico procesada correctamente'); setForm({ nombre: '', email: '', password: '' }); load() }
     setSaving(false); setTimeout(() => setMsg(''), 3000)
   }
 
@@ -139,46 +139,46 @@ function TecnicoManager() {
     <div className="fade-up">
       <SectionTitle>Gestión de Técnicos</SectionTitle>
       
-      <GlassCard className="p-6 mb-6">
-        <div className="manager-grid">
+      <GlassCard className="p-8 mb-8">
+        <div className="split-form-grid">
           {[
-            ['Nombre Completo', 'nombre', 'text'], 
-            ['Correo Electrónico', 'email', 'email'], 
-            ['Contraseña', 'password', 'password']
-          ].map(([l, k, t]) => (
-            <div key={k} className="form-group">
-              <label>{l}</label>
-              <input type={t} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} placeholder={l} />
+            ['Nombre del Operario', 'nombre', 'text'], 
+            ['Email Institucional', 'email', 'email'], 
+            ['Clave de Acceso', 'password', 'password']
+          ].map(([label, key, type]) => (
+            <div key={key} className="input-group">
+              <label>{label}</label>
+              <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={label} />
             </div>
           ))}
-          <PrimaryBtn onClick={add} disabled={saving} className="h-11 px-6 mb-0.5">
-            + Añadir Técnico
+          <PrimaryBtn onClick={add} disabled={saving} className="h-12 px-6">
+            + Registrar
           </PrimaryBtn>
         </div>
-        {msg && <div className="alert-success">{msg}</div>}
+        {msg && <div className="toast-success">{msg}</div>}
       </GlassCard>
 
       {loading ? <Spinner /> : (
-        <div className="glass table-container">
-          <table className="data-table">
+        <div className="glass-card table-wrapper-glass">
+          <table className="neon-table">
             <thead>
               <tr>
-                {['Nombre', 'Email', 'Estado', 'Acción'].map(h => <th key={h}>{h}</th>)}
+                {['Personal Técnico', 'Email de Contacto', 'Estado Operativo', 'Acción'].map(h => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {tecnicos.map(t => (
                 <tr key={t.id}>
-                  <td className="font-semibold text-white">{t.nombre}</td>
-                  <td className="text-mono text-dim font-medium">{t.email}</td>
+                  <td className="font-bold text-highlight">{t.nombre}</td>
+                  <td className="text-mono text-low-contrast">{t.email}</td>
                   <td>
                     <Badge color={t.activo ? 'green' : 'red'}>
-                      {t.activo ? '● ACTIVO' : '● INACTIVO'}
+                      {t.activo ? 'ACTIVO' : 'INACTIVO'}
                     </Badge>
                   </td>
                   <td>
                     <GhostBtn onClick={() => toggle(t.id, t.activo)} className="py-1 px-3 text-xs">
-                      {t.activo ? 'Desactivar' : 'Activar'}
+                      {t.activo ? 'Dar de baja' : 'Reactivar'}
                     </GhostBtn>
                   </td>
                 </tr>
@@ -191,7 +191,7 @@ function TecnicoManager() {
   )
 }
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────────
+// ─── Dashboard de Extracción ──────────────────────────────────────────────────
 function Dashboard({ onLogout }) {
   const [tab, setTab] = useState('extraer')
   const [mode, setMode] = useState('actual')
@@ -241,126 +241,127 @@ function Dashboard({ onLogout }) {
   }
 
   const fmtCell = (key, val) => {
-    if (val === null || val === undefined || val === '') return <span className="text-muted">—</span>
-    if (key === 'solucionado') return <Badge color={val ? 'green' : 'red'}>{val ? '✓ Sí' : '✗ No'}</Badge>
-    if (key === 'hora_aviso' || key === 'hora_fin') return <span className="text-mono text-xs">{String(val).substring(0, 5)}</span>
-    if (key === 'fecha_aviso' || key === 'fecha_fin') return <span className="text-mono text-xs">{new Date(val + 'T12:00:00').toLocaleDateString('es-ES')}</span>
-    if (key === 'created_at') return <span className="text-mono text-muted text-2xs">{new Date(val).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
-    return <span className={`cell-text ${key === 'averia' || key === 'acciones' ? 'text-xs' : 'text-sm'}`}>{val}</span>
+    if (val === null || val === undefined || val === '') return <span className="cell-empty">—</span>
+    if (key === 'solucionado') return <Badge color={val ? 'green' : 'red'}>{val ? 'SÍ' : 'NO'}</Badge>
+    if (key === 'hora_aviso' || key === 'hora_fin') return <span className="text-mono font-medium text-amber">{String(val).substring(0, 5)}</span>
+    if (key === 'fecha_aviso' || key === 'fecha_fin') return <span className="text-mono text-cyan">{new Date(val + 'T12:00:00').toLocaleDateString('es-ES')}</span>
+    if (key === 'created_at') return <span className="text-mono text-muted text-xs">{new Date(val).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
+    return <span className={`cell-content-text ${key === 'averia' || key === 'acciones' ? 'text-long' : ''}`}>{val}</span>
   }
 
   return (
-    <div className="dashboard-layout">
-      {/* Glow top line */}
-      <div className="top-glow-bar" />
+    <div className="app-viewport-container">
+      {/* Línea sutil superior de carga decorativa */}
+      <div className="neon-top-line" />
 
-      {/* Header */}
-      <header className="main-header">
-        <div className="header-brand">
-          <span className="logo">🏥</span>
-          <span className="brand-title-sm">GUARDIAS EM</span>
-          <span className="header-divider" />
-          <span className="header-tag">Polygon Servicio Técnico</span>
+      {/* Header Premium Flotante */}
+      <header className="glass-navigation">
+        <div className="nav-branding">
+          <span className="brand-icon">🏥</span>
+          <div className="brand-texts">
+            <span className="title">GUARDIAS EM</span>
+            <span className="sub">Polygon Servicio Técnico</span>
+          </div>
         </div>
 
-        <nav className="header-nav">
+        <div className="nav-tabs-group">
           {[['extraer', '📊 Datos'], ['tecnicos', '👥 Técnicos']].map(([id, label]) => (
-            <button key={id} onClick={() => setTab(id)} className={`nav-tab ${tab === id ? 'active' : ''}`}>
+            <button key={id} onClick={() => setTab(id)} className={`tab-trigger ${tab === id ? 'is-active' : ''}`}>
               {label}
             </button>
           ))}
-          <button onClick={onLogout} className="btn-logout">↩ Salir</button>
-        </nav>
+          <button onClick={onLogout} className="btn-exit-action">↩ Salir</button>
+        </div>
       </header>
 
-      <main className="main-content">
+      {/* Contenedor Principal */}
+      <main className="dashboard-content-frame">
         {tab === 'tecnicos' && <TecnicoManager />}
 
         {tab === 'extraer' && (
           <div className="fade-up">
-            <SectionTitle>Extracción de Registros</SectionTitle>
+            <SectionTitle>Extracción de Registros de Guardia</SectionTitle>
 
-            <GlassCard className="p-6 mb-6">
-              {/* Selector de Período */}
-              <div className="form-group mb-6">
-                <label className="mb-3 text-dim">Período de búsqueda</label>
-                <div className="period-selector-grid">
+            <GlassCard className="p-8 mb-6">
+              {/* Sección Selectores Interactivos */}
+              <div className="input-group mb-6">
+                <label className="section-label-muted">Selección de Ventana de Tiempo</label>
+                <div className="modern-selector-row">
                   {[
                     ['actual', '⚡', 'Guardia Actual', shift.label],
-                    ['turno',  '📅', 'Por Turno',      'L-V · Sáb · Dom'],
-                    ['libre',  '🗓', 'Rango Libre',    'Fechas personalizadas'],
-                  ].map(([v, icon, label, sub]) => (
-                    <button key={v} onClick={() => setMode(v)} className={`period-card ${mode === v ? 'active' : ''}`}>
-                      <div className="period-icon">{icon}</div>
-                      <div className="period-label">{label}</div>
-                      <div className="period-sub">{sub}</div>
+                    ['turno',  '📅', 'Por Turno Específico', 'L-V · Sáb · Dom'],
+                    ['libre',  '🗓', 'Rango de Fechas', 'Fechas libres'],
+                  ].map(([v, icon, title, subtitle]) => (
+                    <button key={v} onClick={() => setMode(v)} className={`selector-tile ${mode === v ? 'selected' : ''}`}>
+                      <span className="tile-icon">{icon}</span>
+                      <div className="tile-body">
+                        <span className="tile-title">{title}</span>
+                        <span className="tile-subtitle">{subtitle}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Paneles Dinámicos según Modo */}
+              {/* Sub-paneles Contextuales de Entrada */}
               {mode === 'actual' && (
-                <div className="info-badge-panel fade-in">
-                  <span className="pulse-dot" />
-                  <span className="panel-highlight">{shift.label}</span>
-                  <span className="panel-desc">{formatShiftRange(shift)}</span>
+                <div className="panel-live-status fade-in">
+                  <div className="live-indicator"><span className="pulse-circle" /></div>
+                  <div className="live-body">
+                    <p className="live-title">{shift.label}</p>
+                    <p className="live-time">{formatShiftRange(shift)}</p>
+                  </div>
                 </div>
               )}
 
               {mode === 'turno' && (
-                <div className="controls-row fade-in">
-                  <div className="form-group flex-1">
-                    <label>Tipo de turno</label>
+                <div className="inputs-inline-row fade-in">
+                  <div className="input-group flex-1">
+                    <label>Tipo de turno de guardia</label>
                     <select value={turnoType} onChange={e => setTurnoType(e.target.value)}>
                       <option value="lv">L-V Noche (20:00 → 07:00)</option>
                       <option value="sab">Sábado (07:00 sáb → 07:00 dom)</option>
                       <option value="dom">Domingo (07:00 dom → 07:00 lun)</option>
                     </select>
                   </div>
-                  <div className="form-group flex-1">
-                    <label>Fecha inicio del turno</label>
+                  <div className="input-group flex-1">
+                    <label>Fecha del Turno</label>
                     <input type="date" value={date} onChange={e => setDate(e.target.value)} />
                   </div>
                 </div>
               )}
 
               {mode === 'libre' && (
-                <div className="controls-row fade-in">
-                  <div className="form-group flex-1">
-                    <label>Desde</label>
-                    <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-                  </div>
-                  <div className="form-group flex-1">
-                    <label>Hasta</label>
-                    <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-                  </div>
+                <div className="inputs-inline-row fade-in">
+                  <div className="input-group flex-1"><label>Fecha Inicial (Desde)</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                  <div className="input-group flex-1"><label>Fecha Final (Hasta)</label><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
                 </div>
               )}
 
-              {/* Columnas */}
-              <div className="columns-section">
-                <label className="mb-3 text-dim">Columnas a incluir en el Word</label>
-                <div className="pills-container">
+              {/* Selector de Columnas Avanzado */}
+              <div className="columns-picker-area">
+                <label className="section-label-muted">Estructura del Documento (Word/Vista)</label>
+                <div className="badge-pills-flow">
                   {ALL_COLUMNS.map(col => {
-                    const on = selectedCols.includes(col.key)
+                    const isActive = selectedCols.includes(col.key)
                     return (
-                      <button key={col.key} onClick={() => toggleCol(col.key)} className={`pill-btn ${on ? 'active' : ''}`}>
-                        {on ? '✓ ' : ''}{col.label}
+                      <button key={col.key} onClick={() => toggleCol(col.key)} className={`pill-toggle-btn ${isActive ? 'active' : ''}`}>
+                        <span className="pill-dot" />
+                        {col.label}
                       </button>
                     )
                   })}
                 </div>
               </div>
 
-              {/* Acciones principales */}
-              <div className="actions-footer">
-                <PrimaryBtn onClick={search} disabled={loading} className="px-5 py-2.5">
-                  {loading ? '⟳ Buscando…' : '🔍 Buscar registros'}
+              {/* Acciones del Formulario */}
+              <div className="form-submit-footer">
+                <PrimaryBtn onClick={search} disabled={loading}>
+                  {loading ? 'Consultando Base de Datos…' : '🔍 Ejecutar Búsqueda'}
                 </PrimaryBtn>
                 {avisos.length > 0 && (
-                  <GhostBtn onClick={doExport} disabled={exporting || !selectedCols.length} className="px-5 py-2.5">
-                    📄 {exporting ? 'Generando…' : 'Exportar Word'}
+                  <GhostBtn onClick={doExport} disabled={exporting || !selectedCols.length}>
+                    📄 {exporting ? 'Compilando Word…' : 'Descargar Reporte Word'}
                   </GhostBtn>
                 )}
               </div>
@@ -371,21 +372,22 @@ function Dashboard({ onLogout }) {
             {!loading && searched && (
               <div className="fade-in">
                 {avisos.length > 0 && (
-                  <div className="metrics-row">
-                    <Badge color="blue">{avisos.length} AVISOS</Badge>
-                    <Badge color="green">✓ {avisos.filter(a => a.solucionado).length} RESUELTOS</Badge>
-                    <Badge color="yellow">⏳ {avisos.filter(a => !a.solucionado).length} PENDIENTES</Badge>
+                  <div className="metrics-summary-ribbon">
+                    <Badge color="blue">{avisos.length} Registros Totales</Badge>
+                    <Badge color="green">{avisos.filter(a => a.solucionado).length} Resueltos exitosamente</Badge>
+                    <Badge color="yellow">{avisos.filter(a => !a.solucionado).length} Pendientes de revisión</Badge>
                   </div>
                 )}
 
                 {avisos.length === 0 ? (
-                  <GlassCard className="empty-state">
-                    No se han encontrado avisos registrados para este período.
+                  <GlassCard className="empty-state-card">
+                    <span className="empty-icon">📂</span>
+                    <p>Ningún aviso coincide con los parámetros seleccionados para este tramo temporal.</p>
                   </GlassCard>
                 ) : (
-                  <div className="glass table-container">
-                    <div className="responsive-table-scroll">
-                      <table className="data-table">
+                  <div className="glass-card table-wrapper-glass">
+                    <div className="horizontal-scroll-container">
+                      <table className="neon-table">
                         <thead>
                           <tr>
                             {ALL_COLUMNS.filter(c => selectedCols.includes(c.key)).map(col => (
@@ -397,7 +399,7 @@ function Dashboard({ onLogout }) {
                           {avisos.map((av) => (
                             <tr key={av.id}>
                               {ALL_COLUMNS.filter(c => selectedCols.includes(c.key)).map(col => (
-                                <td key={col.key} className={col.key === 'averia' || col.key === 'acciones' ? 'cell-long-text' : ''}>
+                                <td key={col.key}>
                                   {fmtCell(col.key, av[col.key])}
                                 </td>
                               ))}
