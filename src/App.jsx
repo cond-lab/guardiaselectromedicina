@@ -18,388 +18,422 @@ const ALL_COLUMNS = [
   { key: 'created_at',     label: 'Registro' },
 ]
 
-// ─── Componentes de Estilo Premium (Sin Estilos en Línea) ───────────────────
-function GlassCard({ children, className = '' }) {
-  return <div className={`glass-card ${className}`}>{children}</div>
+// ─── COMPONENTES ATÓMICOS INTERACTIVOS ───────────────────────────────────────
+function GlassPanel({ children, className = '' }) {
+  return <div className={`core-glass-panel ${className}`}>{children}</div>
 }
 
-function PrimaryBtn({ children, onClick, disabled, className = '' }) {
+function ActionButton({ children, onClick, disabled, variant = 'primary', className = '' }) {
   return (
-    <button onClick={onClick} disabled={disabled} className={`btn-glow-primary ${className}`}>
-      <span>{children}</span>
-    </button>
-  )
-}
-
-function GhostBtn({ children, onClick, disabled, className = '' }) {
-  return (
-    <button onClick={onClick} disabled={disabled} className={`btn-glass-ghost ${className}`}>
+    <button onClick={onClick} disabled={disabled} className={`action-btn-trigger btn-${variant} ${className}`}>
       {children}
     </button>
   )
 }
 
-function Badge({ children, color = 'blue' }) {
-  return <span className={`modern-badge badge-${color}`}>{children}</span>
+function StatusBadge({ children, type = 'info' }) {
+  return <span className={`ui-status-badge badge-style-${type}`}>{children}</span>
 }
 
-function Spinner() {
+function SectionHeader({ title, subtitle }) {
   return (
-    <div className="modern-spinner-zone">
-      <div className="spinner-core" />
+    <div className="view-section-header">
+      <div className="header-title-wrapper">
+        <h2>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      <div className="header-decorative-line" />
     </div>
   )
 }
 
-function SectionTitle({ children }) {
-  return (
-    <div className="modern-title-area">
-      <h2>{children}</h2>
-      <div className="title-accent-bar" />
-    </div>
-  )
-}
-
-// ─── Pantalla de Login ────────────────────────────────────────────────────────
+// ─── PANTALLA DE ACCESO REIMAGINADA ──────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const go = () => {
+  const handleAuth = () => {
     setLoading(true)
     setTimeout(() => {
-      if (pass === ADMIN_PASSWORD) { sessionStorage.setItem('guardias_admin', '1'); onLogin() }
-      else { setErr('Contraseña de administrador incorrecta'); setLoading(false) }
-    }, 400)
+      if (pass === ADMIN_PASSWORD) {
+        sessionStorage.setItem('guardias_admin', '1')
+        onLogin()
+      } else {
+        setErr('Credencial inválida o sin privilegios de extracción.')
+        setLoading(false)
+      }
+    }, 500)
   }
 
   return (
-    <div className="modern-login-viewport">
-      <div className="glass-card login-glass-box fade-up">
-        <div className="login-logo-glow">🏥</div>
+    <div className="portal-auth-container">
+      <div className="auth-central-nexus view-fade-in">
+        <div className="auth-brand-shield">
+          <span className="shield-icon">🏥</span>
+        </div>
         <h1>GUARDIAS EM</h1>
-        <p className="login-subtitle">Panel de Extracción Integral · Polygon</p>
+        <p className="auth-brand-tagline">Módulo de Extracción Avanzada · Polygon</p>
 
-        <div className="input-container">
-          <label>Credencial de Acceso</label>
+        <div className="ui-input-field">
+          <label>Clave de Seguridad del Sistema</label>
           <input 
             type="password" 
             value={pass}
             onChange={e => { setPass(e.target.value); setErr('') }}
-            onKeyDown={e => e.key === 'Enter' && go()}
-            placeholder="••••••••" 
+            onKeyDown={e => e.key === 'Enter' && handleAuth()}
+            placeholder="Introduce el token de acceso" 
             autoFocus 
           />
-          {err && <div className="login-error-msg">{err}</div>}
+          {err && <p className="auth-critical-error">{err}</p>}
         </div>
         
-        <PrimaryBtn onClick={go} disabled={loading || !pass} className="w-full mt-4">
-          {loading ? 'Validando Token…' : 'ENTRAR AL PANEL →'}
-        </PrimaryBtn>
+        <ActionButton onClick={handleAuth} disabled={loading || !pass} variant="primary" className="w-full-element">
+          {loading ? 'Sincronizando Pasarela…' : 'Autenticar Canal Seguro'}
+        </ActionButton>
       </div>
     </div>
   )
 }
 
-// ─── Gestión de Técnicos ──────────────────────────────────────────────────────
+// ─── GESTIÓN DE TÉCNICOS (LAYOUT ASIMÉTRICO TOTAL) ───────────────────────────
 function TecnicoManager() {
   const [tecnicos, setTecnicos] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ nombre: '', email: '', password: '' })
   const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [toast, setToast] = useState('')
 
-  const load = useCallback(async () => {
+  const loadData = useCallback(async () => {
     const { data } = await supabase.from('tecnicos').select('*').order('nombre')
-    setTecnicos(data || []); setLoading(false)
+    setTecnicos(data || [])
+    setLoading(false)
   }, [])
-  useEffect(() => { load() }, [load])
 
-  const hashP = async p => {
-    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p))
-    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('')
+  useEffect(() => { loadData() }, [loadData])
+
+  const generateSecureHash = async text => {
+    const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('')
   }
 
-  const add = async () => {
+  const handleRegister = async () => {
     if (!form.nombre || !form.email || !form.password) return
     setSaving(true)
-    const hash = await hashP(form.password)
-    const { error } = await supabase.from('tecnicos').insert({ nombre: form.nombre, email: form.email.toLowerCase(), password_hash: hash })
-    if (error) setMsg('Error: ' + error.message)
-    else { setMsg('✓ Alta de técnico procesada correctamente'); setForm({ nombre: '', email: '', password: '' }); load() }
-    setSaving(false); setTimeout(() => setMsg(''), 3000)
+    const password_hash = await generateSecureHash(form.password)
+    const { error } = await supabase.from('tecnicos').insert({ 
+      nombre: form.nombre, 
+      email: form.email.toLowerCase(), 
+      password_hash 
+    })
+    
+    if (error) {
+      setToast('Error en el registro: ' + error.message)
+    } else {
+      setToast('✓ Técnico integrado en el sistema con éxito')
+      setForm({ nombre: '', email: '', password: '' })
+      loadData()
+    }
+    setSaving(false)
+    setTimeout(() => setToast(''), 4000)
   }
 
-  const toggle = async (id, activo) => {
-    await supabase.from('tecnicos').update({ activo: !activo }).eq('id', id); load()
+  const toggleStatus = async (id, currentStatus) => {
+    await supabase.from('tecnicos').update({ activo: !currentStatus }).eq('id', id)
+    loadData()
   }
 
   return (
-    <div className="fade-up">
-      <SectionTitle>Gestión de Técnicos</SectionTitle>
-      
-      <GlassCard className="p-8 mb-8">
-        <div className="split-form-grid">
-          {[
-            ['Nombre del Operario', 'nombre', 'text'], 
-            ['Email Institucional', 'email', 'email'], 
-            ['Clave de Acceso', 'password', 'password']
-          ].map(([label, key, type]) => (
-            <div key={key} className="input-container">
-              <label>{label}</label>
-              <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={label} />
-            </div>
-          ))}
-          <PrimaryBtn onClick={add} disabled={saving} className="h-12 px-6">
-            + Registrar
-          </PrimaryBtn>
-        </div>
-        {msg && <div className="toast-success">{msg}</div>}
-      </GlassCard>
+    <div className="split-asymmetric-layout view-fade-in">
+      {/* Columna Izquierda: Formulario Flotante de Alta */}
+      <div className="layout-sidebar-form">
+        <SectionHeader title="Nuevo Operario" subtitle="Alta de credenciales en el ecosistema corporativo." />
+        <GlassPanel className="interactive-form-box">
+          <div className="ui-input-field">
+            <label>Nombre y Apellidos</label>
+            <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Juan Pérez" />
+          </div>
+          <div className="ui-input-field">
+            <label>Correo Electrónico</label>
+            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@polygon.com" />
+          </div>
+          <div className="ui-input-field">
+            <label>Contraseña de Acceso Temporal</label>
+            <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" />
+          </div>
+          <ActionButton onClick={handleRegister} disabled={saving} variant="primary" className="w-full-element mt-element">
+            + Confirmar Alta de Operario
+          </ActionButton>
+          {toast && <div className="embedded-notification-toast">{toast}</div>}
+        </GlassPanel>
+      </div>
 
-      {loading ? <Spinner /> : (
-        <div className="glass-card table-wrapper-glass">
-          <table className="neon-table">
-            <thead>
-              <tr>
-                {['Personal Técnico', 'Email de Contacto', 'Estado Operativo', 'Acción'].map(h => <th key={h}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {tecnicos.map(t => (
-                <tr key={t.id}>
-                  <td className="font-bold text-highlight">{t.nombre}</td>
-                  <td className="text-mono text-low-contrast">{t.email}</td>
-                  <td>
-                    <Badge color={t.activo ? 'green' : 'red'}>
-                      {t.activo ? 'ACTIVO' : 'INACTIVO'}
-                    </Badge>
-                  </td>
-                  <td>
-                    <GhostBtn onClick={() => toggle(t.id, t.activo)} className="py-1 px-3 text-xs">
-                      {t.activo ? 'Dar de baja' : 'Reactivar'}
-                    </GhostBtn>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Columna Derecha: Lista Grid de Personal */}
+      <div className="layout-main-workspace">
+        <SectionHeader title="Plantilla de Personal Activo" subtitle={`Fichas registradas en base de datos (${tecnicos.length})`} />
+        
+        {loading ? (
+          <div className="ui-global-spinner"><div className="spinner-ring" /></div>
+        ) : (
+          <div className="dynamic-cards-grid">
+            {tecnicos.map(t => (
+              <GlassPanel key={t.id} className="team-member-profile-card">
+                <div className="card-profile-meta">
+                  <div className="avatar-placeholder">{t.nombre.charAt(0)}</div>
+                  <div className="meta-identity">
+                    <h3>{t.nombre}</h3>
+                    <p>{t.email}</p>
+                  </div>
+                </div>
+                <div className="card-profile-actions">
+                  <StatusBadge type={t.activo ? 'success' : 'danger'}>
+                    {t.activo ? 'OPERATIVO' : 'SUSPENDIDO'}
+                  </StatusBadge>
+                  <ActionButton onClick={() => toggleStatus(t.id, t.activo)} variant="ghost" className="btn-micro-size">
+                    {t.activo ? 'Baja' : 'Activar'}
+                  </ActionButton>
+                </div>
+              </GlassPanel>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-// ─── Dashboard de Extracción ──────────────────────────────────────────────────
+// ─── DASHBOARD DE EXTRACCIÓN AVANZADO ────────────────────────────────────────
 function Dashboard({ onLogout }) {
-  const [tab, setTab] = useState('extraer')
-  const [mode, setMode] = useState('actual')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [dateFrom, setDateFrom] = useState(new Date().toISOString().split('T')[0])
-  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0])
-  const [turnoType, setTurnoType] = useState('lv')
-  const [selectedCols, setSelectedCols] = useState(ALL_COLUMNS.map(c => c.key))
-  const [avisos, setAvisos] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const shift = getCurrentShift()
+  const [currentTab, setCurrentTab] = useState('extraer')
+  const [filterMode, setFilterMode] = useState('actual')
+  const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0])
+  const [dateRangeFrom, setDateRangeFrom] = useState(new Date().toISOString().split('T')[0])
+  const [dateRangeTo, setDateRangeTo] = useState(new Date().toISOString().split('T')[0])
+  const [shiftSelection, setShiftSelection] = useState('lv')
+  const [activeColumns, setActiveColumns] = useState(ALL_COLUMNS.map(c => c.key))
+  const [queryResults, setQueryResults] = useState([])
+  const [executingQuery, setExecutingQuery] = useState(false)
+  const [hasQueried, setHasQueried] = useState(false)
+  const [generatingFile, setGeneratingFile] = useState(false)
+  const currentLiveShift = getCurrentShift()
 
-  const toggleCol = key => setSelectedCols(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key])
+  const handleColumnToggle = columnKey => {
+    setActiveColumns(prev => prev.includes(columnKey) ? prev.filter(k => k !== columnKey) : [...prev, columnKey])
+  }
 
-  const getRange = () => {
-    if (mode === 'actual') return { from: shift.from, to: shift.to, label: shift.label }
-    if (mode === 'turno') {
-      const d = new Date(date + 'T12:00:00')
-      const pad = n => String(n).padStart(2, '0')
-      const next = new Date(d); next.setDate(next.getDate() + 1)
-      const fmt = dt => `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`
-      const labels = { lv: 'Guardia L-V', sab: 'Guardia Sábado', dom: 'Guardia Domingo' }
-      return { from: date, to: fmt(next), label: `${labels[turnoType]} ${new Date(date+'T12:00:00').toLocaleDateString('es-ES')}` }
+  const resolveTimeParameters = () => {
+    if (filterMode === 'actual') return { from: currentLiveShift.from, to: currentLiveShift.to, label: currentLiveShift.label }
+    if (filterMode === 'turno') {
+      const target = new Date(targetDate + 'T12:00:00')
+      const padLeft = val => String(val).padStart(2, '0')
+      const nextDay = new Date(target); nextDay.setDate(nextDay.getDate() + 1)
+      const parseDateString = d => `${d.getFullYear()}-${padLeft(d.getMonth()+1)}-${padLeft(d.getDate())}`
+      const shiftLabels = { lv: 'Guardia Laborable L-V', sab: 'Guardia Fin de Semana (Sábado)', dom: 'Guardia Fin de Semana (Domingo)' }
+      return { 
+        from: targetDate, 
+        to: parseDateString(nextDay), 
+        label: `${shiftLabels[shiftSelection]} [${new Date(targetDate+'T12:00:00').toLocaleDateString('es-ES')}]` 
+      }
     }
     return {
-      from: dateFrom, to: dateTo,
-      label: `${new Date(dateFrom+'T12:00:00').toLocaleDateString('es-ES')} — ${new Date(dateTo+'T12:00:00').toLocaleDateString('es-ES')}`
+      from: dateRangeFrom, 
+      to: dateRangeTo,
+      label: `Intervalo Libre: ${new Date(dateRangeFrom+'T12:00:00').toLocaleDateString('es-ES')} al ${new Date(dateRangeTo+'T12:00:00').toLocaleDateString('es-ES')}`
     }
   }
 
-  const search = async () => {
-    setLoading(true); setSearched(true)
-    const { from, to } = getRange()
+  const executeDatabaseSearch = async () => {
+    setExecutingQuery(true)
+    setHasQueried(true)
+    const { from, to } = resolveTimeParameters()
     const { data, error } = await supabase.from('avisos').select('*')
       .gte('fecha_aviso', from).lte('fecha_aviso', to)
       .order('fecha_aviso').order('hora_aviso')
-    if (error) console.error(error)
-    setAvisos(data || []); setLoading(false)
+    
+    if (error) console.error('Supabase Query Critical Error:', error)
+    setQueryResults(data || [])
+    setExecutingQuery(false)
   }
 
-  const doExport = async () => {
-    setExporting(true)
-    await exportToWord(avisos, selectedCols, getRange().label)
-    setExporting(false)
+  const executeFileExport = async () => {
+    setGeneratingFile(true)
+    await exportToWord(queryResults, activeColumns, resolveTimeParameters().label)
+    setGeneratingFile(false)
   }
 
-  const fmtCell = (key, val) => {
-    if (val === null || val === undefined || val === '') return <span className="cell-empty">—</span>
-    if (key === 'solucionado') return <Badge color={val ? 'green' : 'red'}>{val ? 'SÍ' : 'NO'}</Badge>
-    if (key === 'hora_aviso' || key === 'hora_fin') return <span className="text-mono font-medium text-amber">{String(val).substring(0, 5)}</span>
-    if (key === 'fecha_aviso' || key === 'fecha_fin') return <span className="text-mono text-cyan">{new Date(val + 'T12:00:00').toLocaleDateString('es-ES')}</span>
-    if (key === 'created_at') return <span className="text-mono text-muted text-xs">{new Date(val).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
-    return <span className={`cell-content-text ${key === 'averia' || key === 'acciones' ? 'text-long' : ''}`}>{val}</span>
+  const renderDataCell = (columnKey, dataValue) => {
+    if (dataValue === null || dataValue === undefined || dataValue === '') return <span className="cell-null-void">—</span>
+    if (columnKey === 'solucionado') return <StatusBadge type={dataValue ? 'success' : 'danger'}>{dataValue ? 'SÍ' : 'NO'}</StatusBadge>
+    if (columnKey === 'hora_aviso' || columnKey === 'hora_fin') return <span className="typography-mono color-alert">{String(dataValue).substring(0, 5)}</span>
+    if (columnKey === 'fecha_aviso' || columnKey === 'fecha_fin') return <span className="typography-mono color-highlight">{new Date(dataValue + 'T12:00:00').toLocaleDateString('es-ES')}</span>
+    if (columnKey === 'created_at') return <span className="typography-mono text-dimmed text-small-size">{new Date(dataValue).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
+    return <span className={`cell-block-text ${columnKey === 'averia' || columnKey === 'acciones' ? 'allow-text-wrapping' : ''}`}>{dataValue}</span>
   }
 
   return (
-    <div className="app-viewport-container">
-      <div className="neon-top-line" />
+    <div className="workspace-mainframe">
+      <div className="aesthetic-neon-top-bar" />
 
-      {/* Navegación Flotante */}
-      <header className="glass-navigation">
-        <div className="nav-branding">
-          <span className="brand-icon">🏥</span>
-          <div className="brand-texts">
-            <span className="title">GUARDIAS EM</span>
-            <span className="sub">Polygon Servicio Técnico</span>
+      {/* Cabecera de Navegación Unificada */}
+      <header className="navigation-glass-blur-hub">
+        <div className="hub-brand-area">
+          <div className="brand-icon-wrapper">🏥</div>
+          <div className="brand-typography-wrapper">
+            <span className="brand-main-title">GUARDIAS EM</span>
+            <span className="brand-sub-title">Polygon Servicio Técnico</span>
           </div>
         </div>
 
-        <div className="nav-tabs-group">
-          {[['extraer', '📊 Datos'], ['tecnicos', '👥 Técnicos']].map(([id, label]) => (
-            <button key={id} onClick={() => setTab(id)} className={`tab-trigger ${tab === id ? 'is-active' : ''}`}>
-              {label}
-            </button>
-          ))}
-          <button onClick={onLogout} className="btn-exit-action">↩ Salir</button>
+        <div className="hub-control-tabs">
+          <button onClick={() => setCurrentTab('extraer')} className={`tab-button-item ${currentTab === 'extraer' ? 'active-state' : ''}`}>
+            📊 Extracción de Datos
+          </button>
+          <button onClick={() => setCurrentTab('tecnicos')} className={`tab-button-item ${currentTab === 'tecnicos' ? 'active-state' : ''}`}>
+            👥 Gestión de Técnicos
+          </button>
+          <button onClick={onLogout} className="tab-button-logout">Cerrar Sesión ↩</button>
         </div>
       </header>
 
-      {/* Contenido Principal */}
-      <main className="dashboard-content-frame">
-        {tab === 'tecnicos' && <TecnicoManager />}
+      {/* Área de Visualización Modular */}
+      <main className="view-content-viewport">
+        {currentTab === 'tecnicos' && <TecnicoManager />}
 
-        {tab === 'extraer' && (
-          <div className="fade-up">
-            <SectionTitle>Extracción de Registros de Guardia</SectionTitle>
+        {currentTab === 'extraer' && (
+          <div className="view-fade-in">
+            <SectionHeader title="Consola de Extracción Avanzada" subtitle="Configura la ventana de consulta y personaliza las columnas de salida del informe técnico." />
 
-            <GlassCard className="p-8 mb-6">
-              {/* Selectores de Período */}
-              <div className="input-container mb-6">
-                <label className="section-label-muted">Selección de Ventana de Tiempo</label>
-                <div className="modern-selector-row">
+            <div className="control-interactive-grid">
+              
+              {/* Bloque Izquierdo: Configuración del Filtro de Tiempo */}
+              <GlassPanel className="control-card-block p-card-spacing">
+                <h3>1. Selección de Ventana de Consulta</h3>
+                <p className="block-helper-text">Escoge el modo en que el motor de base de datos filtrará los registros activos.</p>
+                
+                <div className="segmented-control-rail">
                   {[
-                    ['actual', '⚡', 'Guardia Actual', shift.label],
-                    ['turno',  '📅', 'Por Turno Específico', 'L-V · Sáb · Dom'],
-                    ['libre',  '🗓', 'Rango de Fechas', 'Fechas libres'],
-                  ].map(([v, icon, title, subtitle]) => (
-                    <button key={v} onClick={() => setMode(v)} className={`selector-tile ${mode === v ? 'selected' : ''}`}>
-                      <span className="tile-icon">{icon}</span>
-                      <div className="tile-body">
-                        <span className="tile-title">{title}</span>
-                        <span className="tile-subtitle">{subtitle}</span>
-                      </div>
+                    { id: 'actual', label: '⚡ Guardia Activa' },
+                    { id: 'turno',  label: '📅 Por Turno Fijo' },
+                    { id: 'libre',  label: '🗓 Rango Libre' }
+                  ].map(tabMode => (
+                    <button key={tabMode.id} onClick={() => setFilterMode(tabMode.id)} className={`rail-segment-item ${filterMode === tabMode.id ? 'active' : ''}`}>
+                      {tabMode.label}
                     </button>
                   ))}
                 </div>
-              </div>
 
-              {/* Sub-paneles Dinámicos */}
-              {mode === 'actual' && (
-                <div className="panel-live-status fade-in">
-                  <div className="live-indicator"><span className="pulse-circle" /></div>
-                  <div className="live-body">
-                    <p className="live-title">{shift.label}</p>
-                    <p className="live-time">{formatShiftRange(shift)}</p>
-                  </div>
+                {/* Sub-paneles Condicionales */}
+                <div className="conditional-fields-wrapper">
+                  {filterMode === 'actual' && (
+                    <div className="status-live-banner view-fade-in">
+                      <div className="banner-core-group">
+                        <span className="live-status-pulse" />
+                        <div>
+                          <p className="live-banner-title">{currentLiveShift.label}</p>
+                          <p className="live-banner-subtitle">{formatShiftRange(currentLiveShift)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {filterMode === 'turno' && (
+                    <div className="form-fields-flex-row view-fade-in">
+                      <div className="ui-input-field flexible-grow">
+                        <label>Turno Rotativo</label>
+                        <select value={shiftSelection} onChange={e => setShiftSelection(e.target.value)}>
+                          <option value="lv">Lunes a Viernes (Noche)</option>
+                          <option value="sab">Sábados (Ciclo Completo 24h)</option>
+                          <option value="dom">Domingos (Ciclo Completo 24h)</option>
+                        </select>
+                      </div>
+                      <div className="ui-input-field flexible-grow">
+                        <label>Fecha de Guardia</label>
+                        <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {filterMode === 'libre' && (
+                    <div className="form-fields-flex-row view-fade-in">
+                      <div className="ui-input-field flexible-grow">
+                        <label>Desde (Fecha Inicio)</label>
+                        <input type="date" value={dateRangeFrom} onChange={e => setDateRangeFrom(e.target.value)} />
+                      </div>
+                      <div className="ui-input-field flexible-grow">
+                        <label>Hasta (Fecha Término)</label>
+                        <input type="date" value={dateRangeTo} onChange={e => setDateRangeTo(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </GlassPanel>
 
-              {mode === 'turno' && (
-                <div className="inputs-inline-row fade-in">
-                  <div className="input-container flex-1">
-                    <label>Tipo de turno de guardia</label>
-                    <select value={turnoType} onChange={e => setTurnoType(e.target.value)}>
-                      <option value="lv">L-V Noche (20:00 → 07:00)</option>
-                      <option value="sab">Sábado (07:00 sáb → 07:00 dom)</option>
-                      <option value="dom">Domingo (07:00 dom → 07:00 lun)</option>
-                    </select>
-                  </div>
-                  <div className="input-container flex-1">
-                    <label>Fecha del Turno</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-                  </div>
-                </div>
-              )}
-
-              {mode === 'libre' && (
-                <div className="inputs-inline-row fade-in">
-                  <div className="input-container flex-1"><label>Fecha Inicial (Desde)</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                  <div className="input-container flex-1"><label>Fecha Final (Hasta)</label><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
-                </div>
-              )}
-
-              {/* Selector de Columnas */}
-              <div className="columns-picker-area">
-                <label className="section-label-muted">Estructura del Documento (Word/Vista)</label>
-                <div className="badge-pills-flow">
+              {/* Bloque Derecho: Estructura y Columnas */}
+              <GlassPanel className="control-card-block p-card-spacing">
+                <h3>2. Columnas e Inclusión de Datos</h3>
+                <p className="block-helper-text">Marca las propiedades que quieres visualizar e imprimir en el documento final.</p>
+                
+                <div className="interactive-checkbox-matrix">
                   {ALL_COLUMNS.map(col => {
-                    const isActive = selectedCols.includes(col.key)
+                    const isSelected = activeColumns.includes(col.key)
                     return (
-                      <button key={col.key} onClick={() => toggleCol(col.key)} className={`pill-toggle-btn ${isActive ? 'active' : ''}`}>
-                        <span className="pill-dot" />
-                        {col.label}
+                      <button key={col.key} onClick={() => handleColumnToggle(col.key)} className={`matrix-checkbox-tile ${isSelected ? 'is-checked' : ''}`}>
+                        <div className="checkbox-indicator-box"><span className="checkbox-inner-dot" /></div>
+                        <span className="checkbox-tile-label">{col.label}</span>
                       </button>
                     )
                   })}
                 </div>
-              </div>
 
-              {/* Botones de Acción */}
-              <div className="form-submit-footer">
-                <PrimaryBtn onClick={search} disabled={loading}>
-                  {loading ? 'Consultando Base de Datos…' : '🔍 Ejecutar Búsqueda'}
-                </PrimaryBtn>
-                {avisos.length > 0 && (
-                  <GhostBtn onClick={doExport} disabled={exporting || !selectedCols.length}>
-                    📄 {exporting ? 'Compilando Word…' : 'Descargar Reporte Word'}
-                  </GhostBtn>
-                )}
-              </div>
-            </GlassCard>
+                <div className="control-actions-execution-bar">
+                  <ActionButton onClick={executeDatabaseSearch} disabled={executingQuery} variant="primary">
+                    {executingQuery ? 'Consultando...' : '🔍 Lanzar Extracción'}
+                  </ActionButton>
+                  {queryResults.length > 0 && (
+                    <ActionButton onClick={executeFileExport} disabled={generatingFile || !activeColumns.length} variant="secondary">
+                      📄 {generatingFile ? 'Generando Word…' : 'Compilar Documento Word'}
+                    </ActionButton>
+                  )}
+                </div>
+              </GlassPanel>
 
-            {loading && <Spinner />}
+            </div>
 
-            {!loading && searched && (
-              <div className="fade-in">
-                {avisos.length > 0 && (
+            {/* Zona Inferior Dinámica de Resultados */}
+            {executingQuery && <div className="ui-global-spinner"><div className="spinner-ring" /></div>}
+
+            {!executingQuery && hasQueried && (
+              <div className="results-view-wrapper view-fade-in">
+                {queryResults.length > 0 && (
                   <div className="metrics-summary-ribbon">
-                    <Badge color="blue">{avisos.length} Registros Totales</Badge>
-                    <Badge color="green">{avisos.filter(a => a.solucionado).length} Resueltos</Badge>
-                    <Badge color="yellow">{avisos.filter(a => !a.solucionado).length} Pendientes</Badge>
+                    <StatusBadge type="info">{queryResults.length} Registros Localizados</StatusBadge>
+                    <StatusBadge type="success">{queryResults.filter(r => r.solucionado).length} Solventados</StatusBadge>
+                    <StatusBadge type="danger">{queryResults.filter(r => !r.solucionado).length} Abiertos</StatusBadge>
                   </div>
                 )}
 
-                {avisos.length === 0 ? (
-                  <GlassCard className="empty-state-card">
-                    <span className="empty-icon">📂</span>
-                    <p>Ningún aviso coincide con los parámetros seleccionados.</p>
-                  </GlassCard>
+                {queryResults.length === 0 ? (
+                  <GlassPanel className="empty-query-placeholder-box">
+                    <span className="placeholder-icon">📂</span>
+                    <p>No se encontraron avisos registrados en los parámetros temporales configurados.</p>
+                  </GlassPanel>
                 ) : (
-                  <div className="glass-card table-wrapper-glass">
-                    <div className="horizontal-scroll-container">
-                      <table className="neon-table">
+                  <GlassPanel className="table-wrapper-overflow-container">
+                    <div className="scrollable-table-canvas">
+                      <table className="custom-data-matrix">
                         <thead>
                           <tr>
-                            {ALL_COLUMNS.filter(c => selectedCols.includes(c.key)).map(col => (
+                            {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => (
                               <th key={col.key}>{col.label}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {avisos.map((av) => (
-                            <tr key={av.id}>
-                              {ALL_COLUMNS.filter(c => selectedCols.includes(c.key)).map(col => (
+                          {queryResults.map(row => (
+                            <tr key={row.id}>
+                              {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => (
                                 <td key={col.key}>
-                                  {fmtCell(col.key, av[col.key])}
+                                  {renderDataCell(col.key, row[col.key])}
                                 </td>
                               ))}
                             </tr>
@@ -407,7 +441,7 @@ function Dashboard({ onLogout }) {
                         </tbody>
                       </table>
                     </div>
-                  </div>
+                  </GlassPanel>
                 )}
               </div>
             )}
