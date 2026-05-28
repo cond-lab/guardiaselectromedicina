@@ -18,36 +18,7 @@ const ALL_COLUMNS = [
   { key: 'created_at',     label: 'Registro' },
 ]
 
-// ─── COMPONENTES ATÓMICOS INTERACTIVOS ───────────────────────────────────────
-function GlassPanel({ children, className = '' }) {
-  return <div className={`core-glass-panel ${className}`}>{children}</div>
-}
-
-function ActionButton({ children, onClick, disabled, variant = 'primary', className = '' }) {
-  return (
-    <button onClick={onClick} disabled={disabled} className={`action-btn-trigger btn-${variant} ${className}`}>
-      {children}
-    </button>
-  )
-}
-
-function StatusBadge({ children, type = 'info' }) {
-  return <span className={`ui-status-badge badge-style-${type}`}>{children}</span>
-}
-
-function SectionHeader({ title, subtitle }) {
-  return (
-    <div className="view-section-header">
-      <div className="header-title-wrapper">
-        <h2>{title}</h2>
-        {subtitle && <p>{subtitle}</p>}
-      </div>
-      <div className="header-decorative-line" />
-    </div>
-  )
-}
-
-// ─── PANTALLA DE ACCESO REIMAGINADA ──────────────────────────────────────────
+// ─── PANTALLA DE ACCESO: INVERSIÓN DE DISEÑO CRÍTICA ─────────────────────────
 function LoginScreen({ onLogin }) {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
@@ -60,43 +31,46 @@ function LoginScreen({ onLogin }) {
         sessionStorage.setItem('guardias_admin', '1')
         onLogin()
       } else {
-        setErr('Credencial inválida o sin privilegios de extracción.')
+        setErr('Acceso denegado. Credencial incorrección o bypass detectado.')
         setLoading(false)
       }
-    }, 500)
+    }, 600)
   }
 
   return (
-    <div className="portal-auth-container">
-      <div className="auth-central-nexus view-fade-in">
-        <div className="auth-brand-shield">
-          <span className="shield-icon">🏥</span>
-        </div>
-        <h1>GUARDIAS EM</h1>
-        <p className="auth-brand-tagline">Módulo de Extracción Avanzada · Polygon</p>
+    <div className="brutalist-auth-matrix">
+      <div className="split-auth-side-banner">
+        <div className="banner-matrix-code">EM_SYSTEM_v4.0</div>
+        <h2>SISTEMA DE EXTRACCIÓN DE DATOS DE GUARDIA</h2>
+      </div>
+      <div className="split-auth-interactive-panel">
+        <div className="form-brutalist-wrapper">
+          <span className="system-terminal-tag">[SECURITY GATEWAY]</span>
+          <h1>Autenticación Requerida</h1>
+          <p>Introduce el token criptográfico para inicializar la pasarela de datos.</p>
+          
+          <div className="brutalist-input-group">
+            <input 
+              type="password" 
+              value={pass}
+              onChange={e => { setPass(e.target.value); setErr('') }}
+              onKeyDown={e => e.key === 'Enter' && handleAuth()}
+              placeholder="••••••••••••••••" 
+              autoFocus 
+            />
+            {err && <div className="terminal-error-message">!! {err}</div>}
+          </div>
 
-        <div className="ui-input-field">
-          <label>Clave de Seguridad del Sistema</label>
-          <input 
-            type="password" 
-            value={pass}
-            onChange={e => { setPass(e.target.value); setErr('') }}
-            onKeyDown={e => e.key === 'Enter' && handleAuth()}
-            placeholder="Introduce el token de acceso" 
-            autoFocus 
-          />
-          {err && <p className="auth-critical-error">{err}</p>}
+          <button onClick={handleAuth} disabled={loading || !pass} className="btn-brutalist-action">
+            {loading ? 'DESENCRIPTANDO CANAL...' : 'CONECTAR AL NÚCLEO →'}
+          </button>
         </div>
-        
-        <ActionButton onClick={handleAuth} disabled={loading || !pass} variant="primary" className="w-full-element">
-          {loading ? 'Sincronizando Pasarela…' : 'Autenticar Canal Seguro'}
-        </ActionButton>
       </div>
     </div>
   )
 }
 
-// ─── GESTIÓN DE TÉCNICOS (LAYOUT ASIMÉTRICO TOTAL) ───────────────────────────
+// ─── GESTIÓN DE TÉCNICOS: FLUJO DE CONTROL INTERACTIVO ────────────────────────
 function TecnicoManager() {
   const [tecnicos, setTecnicos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -128,14 +102,14 @@ function TecnicoManager() {
     })
     
     if (error) {
-      setToast('Error en el registro: ' + error.message)
+      setToast('Error: ' + error.message)
     } else {
-      setToast('✓ Técnico integrado en el sistema con éxito')
+      setToast('✓ Operario insertado en el clúster activo')
       setForm({ nombre: '', email: '', password: '' })
       loadData()
     }
     setSaving(false)
-    setTimeout(() => setToast(''), 4000)
+    setTimeout(() => setToast(''), 3500)
   }
 
   const toggleStatus = async (id, currentStatus) => {
@@ -144,56 +118,61 @@ function TecnicoManager() {
   }
 
   return (
-    <div className="split-asymmetric-layout view-fade-in">
-      {/* Columna Izquierda: Formulario Flotante de Alta */}
-      <div className="layout-sidebar-form">
-        <SectionHeader title="Nuevo Operario" subtitle="Alta de credenciales en el ecosistema corporativo." />
-        <GlassPanel className="interactive-form-box">
-          <div className="ui-input-field">
-            <label>Nombre y Apellidos</label>
-            <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Juan Pérez" />
+    <div className="asymmetric-operator-workspace">
+      {/* Módulo A: Alta de Personal Estilo Consola Inyectada */}
+      <div className="operator-control-tower">
+        <div className="tower-header-badge">INYECCIÓN DE OPERARIOS</div>
+        <p className="tower-description">Vincula credenciales directamente a la pasarela de autenticación móvil.</p>
+        
+        <div className="tower-fields-stack">
+          <div className="cyber-field">
+            <span>ALIAS / NOMBRE COMPLETO</span>
+            <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Escriba aquí..." />
           </div>
-          <div className="ui-input-field">
-            <label>Correo Electrónico</label>
-            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@polygon.com" />
+          <div className="cyber-field">
+            <span>CORREO ELECTRÓNICO</span>
+            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="correo@polygon.com" />
           </div>
-          <div className="ui-input-field">
-            <label>Contraseña de Acceso Temporal</label>
+          <div className="cyber-field">
+            <span>CLAVE TEMPORAL</span>
             <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" />
           </div>
-          <ActionButton onClick={handleRegister} disabled={saving} variant="primary" className="w-full-element mt-element">
-            + Confirmar Alta de Operario
-          </ActionButton>
-          {toast && <div className="embedded-notification-toast">{toast}</div>}
-        </GlassPanel>
+
+          <button onClick={handleRegister} disabled={saving} className="btn-cyber-inject">
+            {saving ? 'INYECTANDO...' : 'REGISTRAR NUEVO OPERARIO'}
+          </button>
+          
+          {toast && <div className="tower-toast-log">{toast}</div>}
+        </div>
       </div>
 
-      {/* Columna Derecha: Lista Grid de Personal */}
-      <div className="layout-main-workspace">
-        <SectionHeader title="Plantilla de Personal Activo" subtitle={`Fichas registradas en base de datos (${tecnicos.length})`} />
-        
+      {/* Módulo B: Tablero Dinámico Desestructurado */}
+      <div className="operator-display-grid">
+        <div className="display-grid-meta">
+          <h3>Nodos de Personal ({tecnicos.length})</h3>
+          <div className="meta-divider" />
+        </div>
+
         {loading ? (
-          <div className="ui-global-spinner"><div className="spinner-ring" /></div>
+          <div className="radar-loader-box"><div className="radar-pulse-ring" /></div>
         ) : (
-          <div className="dynamic-cards-grid">
+          <div className="cyber-cards-masonry">
             {tecnicos.map(t => (
-              <GlassPanel key={t.id} className="team-member-profile-card">
-                <div className="card-profile-meta">
-                  <div className="avatar-placeholder">{t.nombre.charAt(0)}</div>
-                  <div className="meta-identity">
-                    <h3>{t.nombre}</h3>
+              <div key={t.id} className={`node-card-profile ${t.activo ? 'state-active' : 'state-disabled'}`}>
+                <div className="node-card-body">
+                  <div className="node-indicator" />
+                  <div className="node-info">
+                    <h4>{t.nombre}</h4>
                     <p>{t.email}</p>
                   </div>
                 </div>
-                <div className="card-profile-actions">
-                  <StatusBadge type={t.activo ? 'success' : 'danger'}>
-                    {t.activo ? 'OPERATIVO' : 'SUSPENDIDO'}
-                  </StatusBadge>
-                  <ActionButton onClick={() => toggleStatus(t.id, t.activo)} variant="ghost" className="btn-micro-size">
-                    {t.activo ? 'Baja' : 'Activar'}
-                  </ActionButton>
+                <div className="node-card-footer">
+                  <span className="status-label">{t.activo ? 'ACTIVO' : 'INACTIVO'}</span>
+                  <button onClick={() => toggleStatus(t.id, t.activo)} className="btn-node-toggle">
+                    {t.activo ? '[SUSPENDER]' : '[HABILITAR]'}
+                  </button>
                 </div>
-              </GlassPanel>
+              </div>
             ))}
           </div>
         )}
@@ -202,7 +181,7 @@ function TecnicoManager() {
   )
 }
 
-// ─── DASHBOARD DE EXTRACCIÓN AVANZADO ────────────────────────────────────────
+// ─── CONSOLA DE EXTRACCIÓN: INTERFAZ DE FILTRADO RADICAL ──────────────────────
 function Dashboard({ onLogout }) {
   const [currentTab, setCurrentTab] = useState('extraer')
   const [filterMode, setFilterMode] = useState('actual')
@@ -238,7 +217,7 @@ function Dashboard({ onLogout }) {
     return {
       from: dateRangeFrom, 
       to: dateRangeTo,
-      label: `Intervalo Libre: ${new Date(dateRangeFrom+'T12:00:00').toLocaleDateString('es-ES')} al ${new Date(dateRangeTo+'T12:00:00').toLocaleDateString('es-ES')}`
+      label: `Rango Libre: ${new Date(dateRangeFrom+'T12:00:00').toLocaleDateString('es-ES')} a ${new Date(dateRangeTo+'T12:00:00').toLocaleDateString('es-ES')}`
     }
   }
 
@@ -250,7 +229,7 @@ function Dashboard({ onLogout }) {
       .gte('fecha_aviso', from).lte('fecha_aviso', to)
       .order('fecha_aviso').order('hora_aviso')
     
-    if (error) console.error('Supabase Query Critical Error:', error)
+    if (error) console.error(error)
     setQueryResults(data || [])
     setExecutingQuery(false)
   }
@@ -261,92 +240,80 @@ function Dashboard({ onLogout }) {
     setGeneratingFile(false)
   }
 
-  const renderDataCell = (columnKey, dataValue) => {
-    if (dataValue === null || dataValue === undefined || dataValue === '') return <span className="cell-null-void">—</span>
-    if (columnKey === 'solucionado') return <StatusBadge type={dataValue ? 'success' : 'danger'}>{dataValue ? 'SÍ' : 'NO'}</StatusBadge>
-    if (columnKey === 'hora_aviso' || columnKey === 'hora_fin') return <span className="typography-mono color-alert">{String(dataValue).substring(0, 5)}</span>
-    if (columnKey === 'fecha_aviso' || columnKey === 'fecha_fin') return <span className="typography-mono color-highlight">{new Date(dataValue + 'T12:00:00').toLocaleDateString('es-ES')}</span>
-    if (columnKey === 'created_at') return <span className="typography-mono text-dimmed text-small-size">{new Date(dataValue).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
-    return <span className={`cell-block-text ${columnKey === 'averia' || columnKey === 'acciones' ? 'allow-text-wrapping' : ''}`}>{dataValue}</span>
-  }
-
   return (
-    <div className="workspace-mainframe">
-      <div className="aesthetic-neon-top-bar" />
-
-      {/* Cabecera de Navegación Unificada */}
-      <header className="navigation-glass-blur-hub">
-        <div className="hub-brand-area">
-          <div className="brand-icon-wrapper">🏥</div>
-          <div className="brand-typography-wrapper">
-            <span className="brand-main-title">GUARDIAS EM</span>
-            <span className="brand-sub-title">Polygon Servicio Técnico</span>
+    <div className="quantum-mainframe-layout">
+      {/* Barra de Comandos Superior Alternativa */}
+      <nav className="command-center-navbar">
+        <div className="navbar-identity-block">
+          <div className="identity-pulse-core" />
+          <div>
+            <h2>NÚCLEO EXTRACCIÓN</h2>
+            <span>POLYGON MEDICAL MAINTENANCE</span>
           </div>
         </div>
 
-        <div className="hub-control-tabs">
-          <button onClick={() => setCurrentTab('extraer')} className={`tab-button-item ${currentTab === 'extraer' ? 'active-state' : ''}`}>
-            📊 Extracción de Datos
+        <div className="navbar-navigation-triggers">
+          <button onClick={() => setCurrentTab('extraer')} className={`nav-trigger-item ${currentTab === 'extraer' ? 'state-selected' : ''}`}>
+            [01] PANEL EXTRACCIÓN
           </button>
-          <button onClick={() => setCurrentTab('tecnicos')} className={`tab-button-item ${currentTab === 'tecnicos' ? 'active-state' : ''}`}>
-            👥 Gestión de Técnicos
+          <button onClick={() => setCurrentTab('tecnicos')} className={`nav-trigger-item ${currentTab === 'tecnicos' ? 'state-selected' : ''}`}>
+            [02] NODOS OPERARIOS
           </button>
-          <button onClick={onLogout} className="tab-button-logout">Cerrar Sesión ↩</button>
+          <button onClick={onLogout} className="nav-trigger-logout">DISCONNECT ✕</button>
         </div>
-      </header>
+      </nav>
 
-      {/* Área de Visualización Modular */}
-      <main className="view-content-viewport">
+      {/* Visor de Modos Principal */}
+      <main className="mainframe-viewport-content">
         {currentTab === 'tecnicos' && <TecnicoManager />}
 
         {currentTab === 'extraer' && (
-          <div className="view-fade-in">
-            <SectionHeader title="Consola de Extracción Avanzada" subtitle="Configura la ventana de consulta y personaliza las columnas de salida del informe técnico." />
-
-            <div className="control-interactive-grid">
+          <div className="query-builder-dashboard">
+            
+            {/* PANEL DE MANDOS ASIMÉTRICO DE DOS BLOQUES DESIGUALES */}
+            <div className="query-configuration-grid">
               
-              {/* Bloque Izquierdo: Configuración del Filtro de Tiempo */}
-              <GlassPanel className="control-card-block p-card-spacing">
-                <h3>1. Selección de Ventana de Consulta</h3>
-                <p className="block-helper-text">Escoge el modo en que el motor de base de datos filtrará los registros activos.</p>
+              {/* Bloque Izquierdo: Interruptores de Modo de Tiempo */}
+              <div className="matrix-control-panel">
+                <div className="panel-accent-tag">PASO 01 // CRITERIO TEMPORAL</div>
                 
-                <div className="segmented-control-rail">
+                <div className="brutalist-radio-list">
                   {[
-                    { id: 'actual', label: '⚡ Guardia Activa' },
-                    { id: 'turno',  label: '📅 Por Turno Fijo' },
-                    { id: 'libre',  label: '🗓 Rango Libre' }
-                  ].map(tabMode => (
-                    <button key={tabMode.id} onClick={() => setFilterMode(tabMode.id)} className={`rail-segment-item ${filterMode === tabMode.id ? 'active' : ''}`}>
-                      {tabMode.label}
-                    </button>
+                    { id: 'actual', title: 'Guardia en Curso Activa', desc: 'Sincroniza en tiempo real el turno del equipo electromédico actual.' },
+                    { id: 'turno',  title: 'Parámetro de Turno Específico', desc: 'Aísla guardias históricas rotativas L-V o fines de semana completos.' },
+                    { id: 'libre',  title: 'Extractor entre Intervalos Libres', desc: 'Rango libre sin restricciones horarias ni solapamientos de turnos.' }
+                  ].map(mode => (
+                    <div key={mode.id} onClick={() => setFilterMode(mode.id)} className={`radio-brutalist-card ${filterMode === mode.id ? 'is-selected' : ''}`}>
+                      <div className="radio-visual-dot" />
+                      <div className="radio-card-content">
+                        <h4>{mode.title}</h4>
+                        <p>{mode.desc}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
 
-                {/* Sub-paneles Condicionales */}
-                <div className="conditional-fields-wrapper">
+                {/* Inyección Dinámica de Parámetros Interactivos en la Base del Filtro */}
+                <div className="dynamic-parameter-injection-zone">
                   {filterMode === 'actual' && (
-                    <div className="status-live-banner view-fade-in">
-                      <div className="banner-core-group">
-                        <span className="live-status-pulse" />
-                        <div>
-                          <p className="live-banner-title">{currentLiveShift.label}</p>
-                          <p className="live-banner-subtitle">{formatShiftRange(currentLiveShift)}</p>
-                        </div>
-                      </div>
+                    <div className="live-status-card-embedded">
+                      <div className="live-flash-badge">LIVE REFRESHING</div>
+                      <h3>{currentLiveShift.label}</h3>
+                      <p>{formatShiftRange(currentLiveShift)}</p>
                     </div>
                   )}
 
                   {filterMode === 'turno' && (
-                    <div className="form-fields-flex-row view-fade-in">
-                      <div className="ui-input-field flexible-grow">
+                    <div className="inline-fields-brutalist">
+                      <div className="brutalist-field">
                         <label>Turno Rotativo</label>
                         <select value={shiftSelection} onChange={e => setShiftSelection(e.target.value)}>
                           <option value="lv">Lunes a Viernes (Noche)</option>
-                          <option value="sab">Sábados (Ciclo Completo 24h)</option>
-                          <option value="dom">Domingos (Ciclo Completo 24h)</option>
+                          <option value="sab">Sábados (24 Horas)</option>
+                          <option value="dom">Domingos (24 Horas)</option>
                         </select>
                       </div>
-                      <div className="ui-input-field flexible-grow">
+                      <div className="brutalist-field">
                         <label>Fecha de Guardia</label>
                         <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
                       </div>
@@ -354,94 +321,114 @@ function Dashboard({ onLogout }) {
                   )}
 
                   {filterMode === 'libre' && (
-                    <div className="form-fields-flex-row view-fade-in">
-                      <div className="ui-input-field flexible-grow">
-                        <label>Desde (Fecha Inicio)</label>
+                    <div className="inline-fields-brutalist">
+                      <div className="brutalist-field">
+                        <label>Fecha de Inicio (GTE)</label>
                         <input type="date" value={dateRangeFrom} onChange={e => setDateRangeFrom(e.target.value)} />
                       </div>
-                      <div className="ui-input-field flexible-grow">
-                        <label>Hasta (Fecha Término)</label>
+                      <div className="brutalist-field">
+                        <label>Fecha de Fin (LTE)</label>
                         <input type="date" value={dateRangeTo} onChange={e => setDateRangeTo(e.target.value)} />
                       </div>
                     </div>
                   )}
                 </div>
-              </GlassPanel>
+              </div>
 
-              {/* Bloque Derecho: Estructura y Columnas */}
-              <GlassPanel className="control-card-block p-card-spacing">
-                <h3>2. Columnas e Inclusión de Datos</h3>
-                <p className="block-helper-text">Marca las propiedades que quieres visualizar e imprimir en el documento final.</p>
+              {/* Bloque Derecho: Selector Estructural Multitarea */}
+              <div className="matrix-control-panel">
+                <div className="panel-accent-tag">PASO 02 // MAPEADO DE EXPORTACIÓN Y COLUMNAS</div>
+                <p className="matrix-panel-description">Filtra qué datos se omitirán del clúster antes de realizar la conversión de registros.</p>
                 
-                <div className="interactive-checkbox-matrix">
+                <div className="columns-pill-cloud">
                   {ALL_COLUMNS.map(col => {
-                    const isSelected = activeColumns.includes(col.key)
+                    const active = activeColumns.includes(col.key)
                     return (
-                      <button key={col.key} onClick={() => handleColumnToggle(col.key)} className={`matrix-checkbox-tile ${isSelected ? 'is-checked' : ''}`}>
-                        <div className="checkbox-indicator-box"><span className="checkbox-inner-dot" /></div>
-                        <span className="checkbox-tile-label">{col.label}</span>
+                      <button key={col.key} onClick={() => handleColumnToggle(col.key)} className={`column-pill-item ${active ? 'is-active' : ''}`}>
+                        <span className="pill-status-dot" />
+                        {col.label}
                       </button>
                     )
                   })}
                 </div>
 
-                <div className="control-actions-execution-bar">
-                  <ActionButton onClick={executeDatabaseSearch} disabled={executingQuery} variant="primary">
-                    {executingQuery ? 'Consultando...' : '🔍 Lanzar Extracción'}
-                  </ActionButton>
+                <div className="action-trigger-execution-zone">
+                  <button onClick={executeDatabaseSearch} disabled={executingQuery} className="btn-execute-query">
+                    {executingQuery ? 'PROCESANDO CONSULTA...' : 'EJECUTAR EXTRACCIÓN DE PARÁMETROS'}
+                  </button>
+                  
                   {queryResults.length > 0 && (
-                    <ActionButton onClick={executeFileExport} disabled={generatingFile || !activeColumns.length} variant="secondary">
-                      📄 {generatingFile ? 'Generando Word…' : 'Compilar Documento Word'}
-                    </ActionButton>
+                    <button onClick={executeFileExport} disabled={generatingFile || !activeColumns.length} className="btn-export-word-brutalist">
+                      {generatingFile ? 'COMPILANDO WORD...' : 'DESCARGAR INFORME .DOCX'}
+                    </button>
                   )}
                 </div>
-              </GlassPanel>
+              </div>
 
             </div>
 
-            {/* Zona Inferior Dinámica de Resultados */}
-            {executingQuery && <div className="ui-global-spinner"><div className="spinner-ring" /></div>}
+            {/* ÁREA INFERIOR: VISOR DE BASE DE DATOS DOCK COMPACTO */}
+            {executingQuery && <div className="radar-loader-box"><div className="radar-pulse-ring" /></div>}
 
             {!executingQuery && hasQueried && (
-              <div className="results-view-wrapper view-fade-in">
-                {queryResults.length > 0 && (
-                  <div className="metrics-summary-ribbon">
-                    <StatusBadge type="info">{queryResults.length} Registros Localizados</StatusBadge>
-                    <StatusBadge type="success">{queryResults.filter(r => r.solucionado).length} Solventados</StatusBadge>
-                    <StatusBadge type="danger">{queryResults.filter(r => !r.solucionado).length} Abiertos</StatusBadge>
-                  </div>
-                )}
+              <div className="query-output-terminal-workspace">
+                
+                <div className="terminal-results-ribbon">
+                  <div className="ribbon-metric-tag">[ENCONTRADOS: <strong>{queryResults.length}</strong>]</div>
+                  <div className="ribbon-metric-tag state-ok">[SOLVENTADOS: {queryResults.filter(r => r.solucionado).length}]</div>
+                  <div className="ribbon-metric-tag state-err">[ABIERTOS: {queryResults.filter(r => !r.solucionado).length}]</div>
+                </div>
 
                 {queryResults.length === 0 ? (
-                  <GlassPanel className="empty-query-placeholder-box">
-                    <span className="placeholder-icon">📂</span>
-                    <p>No se encontraron avisos registrados en los parámetros temporales configurados.</p>
-                  </GlassPanel>
+                  <div className="terminal-empty-log-state">
+                    NO_RECORDS_FOUND: No existen partes de asistencia técnica registrados para los parámetros de tiempo inyectados.
+                  </div>
                 ) : (
-                  <GlassPanel className="table-wrapper-overflow-container">
-                    <div className="scrollable-table-canvas">
-                      <table className="custom-data-matrix">
-                        <thead>
-                          <tr>
-                            {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => (
-                              <th key={col.key}>{col.label}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queryResults.map(row => (
-                            <tr key={row.id}>
-                              {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => (
-                                <td key={col.key}>
-                                  {renderDataCell(col.key, row[col.key])}
-                                </td>
-                              ))}
-                            </tr>
+                  <div className="brutalist-data-table-container">
+                    <table className="terminal-data-table">
+                      <thead>
+                        <tr>
+                          {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => (
+                            <th key={col.key}>{col.label}</th>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </GlassPanel>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {queryResults.map(row => (
+                          <tr key={row.id}>
+                            {ALL_COLUMNS.filter(c => activeColumns.includes(c.key)).map(col => {
+                              const val = row[col.key]
+                              
+                              // Renderizado In-Line desestructurado
+                              if (val === null || val === undefined || val === '') {
+                                return <td key={col.key} className="cell-void">NULL</td>
+                              }
+                              if (col.key === 'solucionado') {
+                                return (
+                                  <td key={col.key}>
+                                    <span className={`table-inline-badge ${val ? 'ok' : 'err'}`}>
+                                      {val ? 'SÍ' : 'NO'}
+                                    </span>
+                                  </td>
+                                )
+                              }
+                              if (col.key === 'hora_aviso' || col.key === 'hora_fin') {
+                                return <td key={col.key} className="cell-mono-time">{String(val).substring(0, 5)}</td>
+                              }
+                              if (col.key === 'fecha_aviso' || col.key === 'fecha_fin') {
+                                return <td key={col.key} className="cell-mono-date">{new Date(val + 'T12:00:00').toLocaleDateString('es-ES')}</td>
+                              }
+                              return (
+                                <td key={col.key} className={col.key === 'averia' || col.key === 'acciones' ? 'cell-dense-description' : ''}>
+                                  {val}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
