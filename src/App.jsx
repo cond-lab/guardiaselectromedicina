@@ -18,7 +18,7 @@ const ALL_COLUMNS = [
   { key: 'created_at',     label: 'Registro' },
 ]
 
-// ─── Componentes de Estilo Modernos ──────────────────────────────────────────
+// ─── Componentes de Estilo Premium (Sin Estilos en Línea) ───────────────────
 function GlassCard({ children, className = '' }) {
   return <div className={`glass-card ${className}`}>{children}</div>
 }
@@ -60,7 +60,7 @@ function SectionTitle({ children }) {
   )
 }
 
-// ─── Login Screen ─────────────────────────────────────────────────────────────
+// ─── Pantalla de Login ────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
@@ -81,7 +81,7 @@ function LoginScreen({ onLogin }) {
         <h1>GUARDIAS EM</h1>
         <p className="login-subtitle">Panel de Extracción Integral · Polygon</p>
 
-        <div className="input-group">
+        <div className="input-container">
           <label>Credencial de Acceso</label>
           <input 
             type="password" 
@@ -146,7 +146,7 @@ function TecnicoManager() {
             ['Email Institucional', 'email', 'email'], 
             ['Clave de Acceso', 'password', 'password']
           ].map(([label, key, type]) => (
-            <div key={key} className="input-group">
+            <div key={key} className="input-container">
               <label>{label}</label>
               <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={label} />
             </div>
@@ -251,10 +251,9 @@ function Dashboard({ onLogout }) {
 
   return (
     <div className="app-viewport-container">
-      {/* Línea sutil superior de carga decorativa */}
       <div className="neon-top-line" />
 
-      {/* Header Premium Flotante */}
+      {/* Navegación Flotante */}
       <header className="glass-navigation">
         <div className="nav-branding">
           <span className="brand-icon">🏥</span>
@@ -274,7 +273,7 @@ function Dashboard({ onLogout }) {
         </div>
       </header>
 
-      {/* Contenedor Principal */}
+      {/* Contenido Principal */}
       <main className="dashboard-content-frame">
         {tab === 'tecnicos' && <TecnicoManager />}
 
@@ -283,8 +282,8 @@ function Dashboard({ onLogout }) {
             <SectionTitle>Extracción de Registros de Guardia</SectionTitle>
 
             <GlassCard className="p-8 mb-6">
-              {/* Sección Selectores Interactivos */}
-              <div className="input-group mb-6">
+              {/* Selectores de Período */}
+              <div className="input-container mb-6">
                 <label className="section-label-muted">Selección de Ventana de Tiempo</label>
                 <div className="modern-selector-row">
                   {[
@@ -303,7 +302,7 @@ function Dashboard({ onLogout }) {
                 </div>
               </div>
 
-              {/* Sub-paneles Contextuales de Entrada */}
+              {/* Sub-paneles Dinámicos */}
               {mode === 'actual' && (
                 <div className="panel-live-status fade-in">
                   <div className="live-indicator"><span className="pulse-circle" /></div>
@@ -316,7 +315,7 @@ function Dashboard({ onLogout }) {
 
               {mode === 'turno' && (
                 <div className="inputs-inline-row fade-in">
-                  <div className="input-group flex-1">
+                  <div className="input-container flex-1">
                     <label>Tipo de turno de guardia</label>
                     <select value={turnoType} onChange={e => setTurnoType(e.target.value)}>
                       <option value="lv">L-V Noche (20:00 → 07:00)</option>
@@ -324,7 +323,7 @@ function Dashboard({ onLogout }) {
                       <option value="dom">Domingo (07:00 dom → 07:00 lun)</option>
                     </select>
                   </div>
-                  <div className="input-group flex-1">
+                  <div className="input-container flex-1">
                     <label>Fecha del Turno</label>
                     <input type="date" value={date} onChange={e => setDate(e.target.value)} />
                   </div>
@@ -333,12 +332,12 @@ function Dashboard({ onLogout }) {
 
               {mode === 'libre' && (
                 <div className="inputs-inline-row fade-in">
-                  <div className="input-group flex-1"><label>Fecha Inicial (Desde)</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                  <div className="input-group flex-1"><label>Fecha Final (Hasta)</label><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                  <div className="input-container flex-1"><label>Fecha Inicial (Desde)</label><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                  <div className="input-container flex-1"><label>Fecha Final (Hasta)</label><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
                 </div>
               )}
 
-              {/* Selector de Columnas Avanzado */}
+              {/* Selector de Columnas */}
               <div className="columns-picker-area">
                 <label className="section-label-muted">Estructura del Documento (Word/Vista)</label>
                 <div className="badge-pills-flow">
@@ -354,7 +353,7 @@ function Dashboard({ onLogout }) {
                 </div>
               </div>
 
-              {/* Acciones del Formulario */}
+              {/* Botones de Acción */}
               <div className="form-submit-footer">
                 <PrimaryBtn onClick={search} disabled={loading}>
                   {loading ? 'Consultando Base de Datos…' : '🔍 Ejecutar Búsqueda'}
@@ -374,15 +373,15 @@ function Dashboard({ onLogout }) {
                 {avisos.length > 0 && (
                   <div className="metrics-summary-ribbon">
                     <Badge color="blue">{avisos.length} Registros Totales</Badge>
-                    <Badge color="green">{avisos.filter(a => a.solucionado).length} Resueltos exitosamente</Badge>
-                    <Badge color="yellow">{avisos.filter(a => !a.solucionado).length} Pendientes de revisión</Badge>
+                    <Badge color="green">{avisos.filter(a => a.solucionado).length} Resueltos</Badge>
+                    <Badge color="yellow">{avisos.filter(a => !a.solucionado).length} Pendientes</Badge>
                   </div>
                 )}
 
                 {avisos.length === 0 ? (
                   <GlassCard className="empty-state-card">
                     <span className="empty-icon">📂</span>
-                    <p>Ningún aviso coincide con los parámetros seleccionados para este tramo temporal.</p>
+                    <p>Ningún aviso coincide con los parámetros seleccionados.</p>
                   </GlassCard>
                 ) : (
                   <div className="glass-card table-wrapper-glass">
