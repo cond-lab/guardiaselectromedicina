@@ -1,13 +1,429 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guardias Electromedicina — Panel de Extracción</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Guardias Electromedicina · Polygon</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#03080f;--bg1:#060e1a;--bg2:#091424;--bg3:#0d1c34;--bg4:#112244;
+  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.1);--b3:rgba(255,255,255,0.18);
+  --a:#4facfe;--a2:#0070f3;--a3:#00c6fb;
+  --ag:linear-gradient(135deg,#0070f3,#00c6fb);
+  --t1:#f0f6ff;--t2:#8ab0cc;--t3:#3a5a7a;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+  --font:'DM Sans',sans-serif;--head:'Syne',sans-serif;--mono:'DM Mono',monospace;
+}
+html,body,#root{height:100%;background:var(--bg);color:var(--t1);font-family:var(--font);font-size:15px;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+#root{position:relative;z-index:1}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+input,select,textarea{font-family:var(--font);background:var(--bg3);border:1px solid var(--b1);color:var(--t1);border-radius:8px;padding:9px 13px;font-size:14px;outline:none;width:100%;transition:all .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(79,172,254,0.12);background:var(--bg4)}
+select option{background:var(--bg2)}
+button{font-family:var(--font);cursor:pointer;border:none;border-radius:8px;font-weight:600;transition:all .2s}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:not(:disabled):hover{filter:brightness(1.12)}
+label{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:5px}
+.glass{background:linear-gradient(145deg,rgba(255,255,255,0.055) 0%,rgba(255,255,255,0.018) 100%);border:1px solid var(--b1);border-radius:16px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 8px 40px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.fade-up{animation:fadeUp .35s cubic-bezier(.16,1,.3,1) both}
+.fade-in{animation:fadeIn .25s ease both}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 16px;text-align:left;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);white-space:nowrap;background:rgba(255,255,255,0.025);border-bottom:1px solid var(--b1)}
+td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.025);vertical-align:top}
+tr:nth-child(even) td{background:rgba(255,255,255,0.012)}
+tr:hover td{background:rgba(79,172,254,0.04);transition:background .15s}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ─── CONFIG ────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://oqcskptqdjqbrsuegdeu.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xY3NrcHRxZGpxYnJzdWVnZGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NjE3MjQsImV4cCI6MjA5NTQzNzcyNH0.Ig0fjNky8wdUAsuqZgzY-peyLjLCzF5TehFHSZfqCT4'
+const ADMIN_PASS   = 'Rafa20ali.'
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+const { useState, useEffect, useCallback } = React
+
+// ─── WORD EXPORT ───────────────────────────────────────────────────────────────
+const {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign, PageOrientation
+} = docx
+
+const COL_LABELS = {
+  fecha_aviso:'Fecha',hora_aviso:'Hora',servicio:'Servicio',averia:'Avería',
+  acciones:'Acciones',tecnico_nombre:'Técnico',solucionado:'Resuelto',
+  fecha_fin:'Fecha Fin',hora_fin:'Hora Fin',created_at:'Registro'
+}
+const COL_PCT = {
+  fecha_aviso:7,hora_aviso:5,servicio:11,averia:22,acciones:26,
+  tecnico_nombre:11,solucionado:6,fecha_fin:7,hora_fin:5,created_at:10
+}
+
+function fmtVal(key, val) {
+  if(val===null||val===undefined||val==='') return '—'
+  if(key==='solucionado') return val?'✓ Sí':'✗ No'
+  if(key==='created_at') return new Date(val).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})
+  if(key==='hora_aviso'||key==='hora_fin') return String(val).substring(0,5)
+  if(key==='fecha_aviso'||key==='fecha_fin') return new Date(val+'T00:00:00').toLocaleDateString('es-ES')
+  return String(val)
+}
+
+async function exportWord(avisos, cols, label) {
+  const validCols = cols.filter(c => COL_LABELS[c])
+  const total = validCols.reduce((s,c)=>s+(COL_PCT[c]||8),0)
+  const pcts = validCols.map(c=>Math.floor(((COL_PCT[c]||8)/total)*100))
+  pcts[pcts.length-1] += 100-pcts.reduce((a,b)=>a+b,0)
+
+  const brd = {style:BorderStyle.SINGLE,size:1,color:'C8D8E8'}
+  const brds = {top:brd,bottom:brd,left:brd,right:brd}
+
+  const hRow = new TableRow({
+    tableHeader:true,
+    children: validCols.map((col,i)=>new TableCell({
+      borders:brds,
+      width:{size:pcts[i],type:WidthType.PERCENTAGE},
+      shading:{fill:'1B3A5C',type:ShadingType.CLEAR},
+      margins:{top:80,bottom:80,left:100,right:100},
+      verticalAlign:VerticalAlign.CENTER,
+      children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:COL_LABELS[col],bold:true,color:'FFFFFF',font:'Calibri',size:17})]})]
+    }))
+  })
+
+  const dRows = avisos.map((av,ri)=>new TableRow({
+    children: validCols.map((col,i)=>new TableCell({
+      borders:brds,
+      width:{size:pcts[i],type:WidthType.PERCENTAGE},
+      shading:{fill:ri%2===0?'FFFFFF':'EEF4FB',type:ShadingType.CLEAR},
+      margins:{top:60,bottom:60,left:100,right:100},
+      verticalAlign:VerticalAlign.CENTER,
+      children:[new Paragraph({children:[new TextRun({
+        text:fmtVal(col,av[col]),font:'Calibri',size:16,
+        color:col==='solucionado'?(av[col]?'1a7a3c':'cc2222'):'1a2a3a',
+        bold:col==='solucionado'
+      })]})]
+    }))
+  }))
+
+  const table = new Table({width:{size:100,type:WidthType.PERCENTAGE},rows:[hRow,...dRows]})
+  const resolved = avisos.filter(a=>a.solucionado).length
+
+  const doc = new Document({
+    styles:{default:{document:{run:{font:'Calibri',size:20}}}},
+    sections:[{
+      properties:{page:{size:{width:12240,height:15840,orientation:PageOrientation.LANDSCAPE},margin:{top:720,right:720,bottom:720,left:720}}},
+      children:[
+        new Paragraph({spacing:{after:80},children:[new TextRun({text:'INFORME DE GUARDIAS — ELECTROMEDICINA',bold:true,size:28,font:'Calibri',color:'1B3A5C'})]}),
+        new Paragraph({spacing:{after:20},children:[
+          new TextRun({text:`Período: `,size:19,font:'Calibri',color:'333333',bold:true}),
+          new TextRun({text:label,size:19,font:'Calibri',color:'1B3A5C',bold:true}),
+          new TextRun({text:`   |   Avisos: ${avisos.length}   |   Resueltos: ${resolved}   |   Pendientes: ${avisos.length-resolved}`,size:17,font:'Calibri',color:'666666'}),
+        ]}),
+        new Paragraph({spacing:{after:20},children:[new TextRun({text:`Generado: ${new Date().toLocaleString('es-ES')}   |   Polygon Servicio Técnico · Electromedicina`,size:15,font:'Calibri',color:'999999'})]}),
+        new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:12,color:'1B3A5C',space:1}},spacing:{after:280},children:[]}),
+        table,
+      ]
+    }]
+  })
+  const blob = await Packer.toBlob(doc)
+  saveAs(blob, `guardias_${label.replace(/[\/\s·—]/g,'_')}.docx`)
+}
+
+// ─── SHIFT UTILS ───────────────────────────────────────────────────────────────
+function getCurrentShift() {
+  const now = new Date()
+  const dow = now.getDay() // 0=dom,6=sab
+  const h = now.getHours()
+  const pad = n=>String(n).padStart(2,'0')
+  const fmt = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
+  const add = (d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r}
+  const today = fmt(now), yesterday = fmt(add(now,-1)), tomorrow = fmt(add(now,1))
+  if(dow===6) return h>=7 ? {label:'Guardia Sábado',from:today,to:tomorrow} : {label:'Guardia Viernes Noche',from:yesterday,to:today}
+  if(dow===0) return h>=7 ? {label:'Guardia Domingo',from:today,to:tomorrow} : {label:'Guardia Sábado',from:yesterday,to:today}
+  if(h>=20) return {label:'Guardia Noche',from:today,to:tomorrow}
+  if(h<7)   return {label:'Guardia Noche',from:yesterday,to:today}
+  return {label:'Próxima guardia',from:today,to:tomorrow}
+}
+function fmtShift(s) {
+  const f=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'2-digit'})
+  return `${f(s.from)} → ${f(s.to)}`
+}
+
+// ─── ATOMS ─────────────────────────────────────────────────────────────────────
+const ALL_COLS = [
+  {key:'fecha_aviso',label:'Fecha Aviso'},{key:'hora_aviso',label:'Hora Aviso'},
+  {key:'servicio',label:'Servicio'},{key:'averia',label:'Avería'},
+  {key:'acciones',label:'Acciones'},{key:'tecnico_nombre',label:'Técnico'},
+  {key:'solucionado',label:'Solucionado'},{key:'fecha_fin',label:'Fecha Fin'},
+  {key:'hora_fin',label:'Hora Fin'},{key:'created_at',label:'Registro'},
+]
+
+function Card({children,style}){return <div className="glass" style={{padding:'22px 26px',...style}}>{children}</div>}
+function PBtn({children,onClick,disabled,style}){return <button onClick={onClick} disabled={disabled} style={{padding:'10px 22px',fontSize:13.5,background:'linear-gradient(135deg,#0070f3,#00c6fb)',color:'#fff',borderRadius:10,boxShadow:disabled?'none':'0 4px 20px rgba(0,112,243,0.3)',...style}}>{children}</button>}
+function GBtn({children,onClick,disabled,style}){return <button onClick={onClick} disabled={disabled} style={{padding:'10px 22px',fontSize:13.5,background:'rgba(255,255,255,0.05)',color:'var(--t2)',border:'1px solid var(--b1)',borderRadius:10,...style}}>{children}</button>}
+function Badge({children,color='blue'}){
+  const m={blue:['rgba(79,172,254,0.12)','var(--a)','rgba(79,172,254,0.3)'],green:['rgba(16,185,129,0.12)','var(--green)','rgba(16,185,129,0.3)'],red:['rgba(239,68,68,0.12)','var(--red)','rgba(239,68,68,0.3)'],yellow:['rgba(245,158,11,0.12)','var(--yellow)','rgba(245,158,11,0.3)']}
+  const [bg,fg,bd]=m[color]||m.blue
+  return <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 9px',borderRadius:6,fontSize:11,fontWeight:700,letterSpacing:'.06em',fontFamily:'var(--mono)',background:bg,color:fg,border:`1px solid ${bd}`}}>{children}</span>
+}
+function Spin(){return <div style={{textAlign:'center',padding:48}}><div style={{display:'inline-block',width:26,height:26,border:'2px solid rgba(255,255,255,0.08)',borderTop:'2px solid var(--a)',borderRadius:'50%',animation:'spin .7s linear infinite'}}/></div>}
+function Divider(){return <div style={{height:1,background:'var(--b1)',margin:'20px 0'}}/>}
+function SecTitle({children}){return <div style={{marginBottom:24}}><h2 style={{fontFamily:'var(--head)',fontSize:20,fontWeight:700}}>{children}</h2><div style={{height:2,width:36,background:'linear-gradient(135deg,#0070f3,#00c6fb)',marginTop:8,borderRadius:2}}/></div>}
+
+// ─── LOGIN ─────────────────────────────────────────────────────────────────────
+function Login({onLogin}){
+  const [p,setP]=useState(''), [err,setErr]=useState(''), [load,setLoad]=useState(false)
+  const go=()=>{setLoad(true);setTimeout(()=>{if(p===ADMIN_PASS){sessionStorage.setItem('ga','1');onLogin()}else{setErr('Contraseña incorrecta');setLoad(false)}},350)}
+  return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,112,243,0.12) 0%,transparent 65%)'}}>
+      <div className="glass fade-up" style={{width:400,padding:'48px 40px',position:'relative'}}>
+        <div style={{position:'absolute',top:0,left:'25%',right:'25%',height:2,background:'linear-gradient(135deg,#0070f3,#00c6fb)',borderRadius:'0 0 4px 4px'}}/>
+        <div style={{textAlign:'center',marginBottom:36}}>
+          <div style={{width:56,height:56,borderRadius:16,margin:'0 auto 16px',background:'linear-gradient(135deg,var(--bg4),var(--bg3))',border:'1px solid var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,boxShadow:'0 0 30px rgba(79,172,254,0.15)'}}>🏥</div>
+          <div style={{fontFamily:'var(--head)',fontSize:24,fontWeight:800,letterSpacing:'.06em',background:'linear-gradient(135deg,#fff 30%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>GUARDIAS EM</div>
+          <div style={{color:'var(--t3)',fontSize:12.5,marginTop:5}}>Panel de extracción · Polygon</div>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label>Contraseña de acceso</label>
+          <input type="password" value={p} onChange={e=>{setP(e.target.value);setErr('')}} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="••••••••" autoFocus/>
+          {err&&<div style={{color:'var(--red)',fontSize:12,marginTop:5}}>{err}</div>}
+        </div>
+        <PBtn onClick={go} disabled={load||!p} style={{width:'100%',padding:12}}>{load?'Verificando…':'ACCEDER →'}</PBtn>
+      </div>
+    </div>
+  )
+}
+
+// ─── TÉCNICOS ──────────────────────────────────────────────────────────────────
+function Tecnicos(){
+  const [list,setList]=useState([]), [load,setLoad]=useState(true)
+  const [f,setF]=useState({nombre:'',email:'',password:''}), [save,setSave]=useState(false), [msg,setMsg]=useState('')
+  const reload=useCallback(async()=>{const{data}=await db.from('tecnicos').select('*').order('nombre');setList(data||[]);setLoad(false)},[])
+  useEffect(()=>{reload()},[reload])
+  const hashP=async p=>{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+  const add=async()=>{
+    if(!f.nombre||!f.email||!f.password)return
+    setSave(true)
+    const hash=await hashP(f.password)
+    const{error}=await db.from('tecnicos').insert({nombre:f.nombre,email:f.email.toLowerCase(),password_hash:hash})
+    if(error)setMsg('Error: '+error.message); else{setMsg('✓ Técnico creado');setF({nombre:'',email:'',password:''});reload()}
+    setSave(false);setTimeout(()=>setMsg(''),3000)
+  }
+  const tog=async(id,a)=>{await db.from('tecnicos').update({activo:!a}).eq('id',id);reload()}
+  return (
+    <div className="fade-up">
+      <SecTitle>Gestión de Técnicos</SecTitle>
+      <Card style={{marginBottom:16}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:12,alignItems:'end'}}>
+          {[['Nombre','nombre','text'],['Email','email','email'],['Contraseña','password','password']].map(([l,k,t])=>(
+            <div key={k}><label>{l}</label><input type={t} value={f[k]} onChange={e=>setF(x=>({...x,[k]:e.target.value}))} placeholder={l}/></div>
+          ))}
+          <PBtn onClick={add} disabled={save} style={{height:40,padding:'0 20px'}}>+ Añadir</PBtn>
+        </div>
+        {msg&&<div style={{marginTop:10,padding:'8px 12px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:8,color:'var(--green)',fontSize:13}}>{msg}</div>}
+      </Card>
+      {load?<Spin/>:(
+        <div className="glass" style={{padding:0,overflow:'hidden'}}>
+          <table><thead><tr>{['Nombre','Email','Estado',''].map(h=><th key={h}>{h}</th>)}</tr></thead>
+          <tbody>{list.map(t=>(
+            <tr key={t.id}>
+              <td style={{fontWeight:500}}>{t.nombre}</td>
+              <td style={{color:'var(--t2)',fontFamily:'var(--mono)',fontSize:12}}>{t.email}</td>
+              <td><Badge color={t.activo?'green':'red'}>{t.activo?'● ACTIVO':'● INACTIVO'}</Badge></td>
+              <td><GBtn onClick={()=>tog(t.id,t.activo)} style={{padding:'4px 14px',fontSize:12}}>{t.activo?'Desactivar':'Activar'}</GBtn></td>
+            </tr>
+          ))}</tbody></table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── EXTRAER ───────────────────────────────────────────────────────────────────
+function Extraer(){
+  const [mode,setMode]=useState('actual')
+  const [date,setDate]=useState(new Date().toISOString().split('T')[0])
+  const [from,setFrom]=useState(new Date().toISOString().split('T')[0])
+  const [to,setTo]=useState(new Date().toISOString().split('T')[0])
+  const [turno,setTurno]=useState('lv')
+  const [cols,setCols]=useState(ALL_COLS.map(c=>c.key))
+  const [avisos,setAvisos]=useState([]), [load,setLoad]=useState(false)
+  const [searched,setSearched]=useState(false), [exp,setExp]=useState(false)
+  const shift=getCurrentShift()
+  const tog=k=>setCols(p=>p.includes(k)?p.filter(x=>x!==k):[...p,k])
+
+  const getRange=()=>{
+    if(mode==='actual') return{from:shift.from,to:shift.to,label:shift.label}
+    if(mode==='turno'){
+      const d=new Date(date+'T12:00:00'), pad=n=>String(n).padStart(2,'0')
+      const nx=new Date(d);nx.setDate(nx.getDate()+1)
+      const fmt=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`
+      const lb={lv:'Guardia L-V',sab:'Guardia Sábado',dom:'Guardia Domingo'}
+      return{from:date,to:fmt(nx),label:`${lb[turno]} ${new Date(date+'T12:00:00').toLocaleDateString('es-ES')}`}
+    }
+    return{from,to,label:`${new Date(from+'T12:00:00').toLocaleDateString('es-ES')} — ${new Date(to+'T12:00:00').toLocaleDateString('es-ES')}`}
+  }
+
+  const search=async()=>{
+    setLoad(true);setSearched(true)
+    const r=getRange()
+    const{data,error}=await db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso')
+    if(error)console.error(error)
+    setAvisos(data||[]);setLoad(false)
+  }
+
+  const doExp=async()=>{setExp(true);await exportWord(avisos,cols,getRange().label);setExp(false)}
+
+  const fmtCell=(key,val)=>{
+    if(val===null||val===undefined||val==='') return <span style={{color:'var(--t3)'}}>—</span>
+    if(key==='solucionado') return <Badge color={val?'green':'red'}>{val?'✓ Sí':'✗ No'}</Badge>
+    if(key==='hora_aviso'||key==='hora_fin') return <span style={{fontFamily:'var(--mono)',fontSize:12}}>{String(val).substring(0,5)}</span>
+    if(key==='fecha_aviso'||key==='fecha_fin') return <span style={{fontFamily:'var(--mono)',fontSize:12}}>{new Date(val+'T12:00:00').toLocaleDateString('es-ES')}</span>
+    if(key==='created_at') return <span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--t3)'}}>{new Date(val).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}</span>
+    return <span style={{fontSize:key==='averia'||key==='acciones'?12:13,lineHeight:1.45}}>{val}</span>
+  }
+
+  return (
+    <div className="fade-up">
+      <SecTitle>Extracción de Registros</SecTitle>
+      <Card style={{marginBottom:20}}>
+        <div style={{marginBottom:24}}>
+          <label style={{marginBottom:10}}>Período de búsqueda</label>
+          <div style={{display:'flex',gap:10}}>
+            {[['actual','⚡','Guardia Actual',shift.label],['turno','📅','Por Turno','L-V · Sáb · Dom'],['libre','🗓','Rango Libre','Fechas personalizadas']].map(([v,ic,lb,sub])=>(
+              <button key={v} onClick={()=>setMode(v)} style={{flex:1,padding:'14px 16px',textAlign:'left',borderRadius:12,background:mode===v?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',border:`1px solid ${mode===v?'rgba(79,172,254,0.35)':'var(--b1)'}`,color:mode===v?'var(--t1)':'var(--t2)',boxShadow:mode===v?'0 0 24px rgba(79,172,254,0.1)':'none'}}>
+                <div style={{fontSize:18,marginBottom:6}}>{ic}</div>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:3}}>{lb}</div>
+                <div style={{fontSize:11,color:mode===v?'var(--a)':'var(--t3)'}}>{sub}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {mode==='actual'&&(
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',background:'rgba(79,172,254,0.06)',border:'1px solid rgba(79,172,254,0.15)',borderRadius:10}}>
+            <span style={{width:8,height:8,borderRadius:'50%',background:'var(--a)',animation:'pulse 2s infinite',flexShrink:0}}/>
+            <span style={{fontWeight:600,color:'var(--a)',fontSize:13}}>{shift.label}</span>
+            <span style={{color:'var(--t3)',fontSize:12}}>{fmtShift(shift)}</span>
+          </div>
+        )}
+        {mode==='turno'&&(
+          <div style={{display:'flex',gap:14,alignItems:'flex-end'}}>
+            <div style={{flex:1}}><label>Tipo de turno</label>
+              <select value={turno} onChange={e=>setTurno(e.target.value)}>
+                <option value="lv">L-V Noche (20:00 → 07:00)</option>
+                <option value="sab">Sábado (07:00 sáb → 07:00 dom)</option>
+                <option value="dom">Domingo (07:00 dom → 07:00 lun)</option>
+              </select>
+            </div>
+            <div style={{flex:1}}><label>Fecha inicio</label><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
+          </div>
+        )}
+        {mode==='libre'&&(
+          <div style={{display:'flex',gap:14,alignItems:'flex-end'}}>
+            <div style={{flex:1}}><label>Desde</label><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div>
+            <div style={{flex:1}}><label>Hasta</label><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></div>
+          </div>
+        )}
+
+        <Divider/>
+        <label style={{marginBottom:10}}>Columnas en el Word</label>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
+          {ALL_COLS.map(c=>{const on=cols.includes(c.key);return(
+            <button key={c.key} onClick={()=>tog(c.key)} style={{padding:'5px 13px',fontSize:12,fontWeight:600,borderRadius:20,background:on?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',color:on?'var(--a)':'var(--t3)',border:`1px solid ${on?'rgba(79,172,254,0.3)':'var(--b1)'}`}}>
+              {on?'✓ ':''}{c.label}
+            </button>
+          )})}
+        </div>
+
+        <div style={{display:'flex',gap:10}}>
+          <PBtn onClick={search} disabled={load}>{load?'⟳ Buscando…':'🔍 Buscar registros'}</PBtn>
+          {avisos.length>0&&<GBtn onClick={doExp} disabled={exp||!cols.length}>📄 {exp?'Generando…':'Exportar Word'}</GBtn>}
+        </div>
+      </Card>
+
+      {load&&<Spin/>}
+      {!load&&searched&&(
+        <div className="fade-in">
+          {avisos.length>0&&(
+            <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
+              <Badge color="blue">{avisos.length} AVISOS</Badge>
+              <Badge color="green">✓ {avisos.filter(a=>a.solucionado).length} RESUELTOS</Badge>
+              <Badge color="yellow">⏳ {avisos.filter(a=>!a.solucionado).length} PENDIENTES</Badge>
+            </div>
+          )}
+          {avisos.length===0
+            ?<Card style={{textAlign:'center',padding:48,color:'var(--t3)'}}>No hay avisos para este período.</Card>
+            :<div className="glass" style={{padding:0,overflow:'hidden'}}>
+              <div style={{overflowX:'auto'}}>
+                <table>
+                  <thead><tr>{ALL_COLS.filter(c=>cols.includes(c.key)).map(c=><th key={c.key}>{c.label}</th>)}</tr></thead>
+                  <tbody>{avisos.map((av,i)=>(
+                    <tr key={av.id||i}>
+                      {ALL_COLS.filter(c=>cols.includes(c.key)).map(c=>(
+                        <td key={c.key} style={{maxWidth:c.key==='averia'||c.key==='acciones'?280:'auto'}}>{fmtCell(c.key,av[c.key])}</td>
+                      ))}
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  const [auth,setAuth]=useState(!!sessionStorage.getItem('ga'))
+  const [tab,setTab]=useState('extraer')
+  if(!auth) return <Login onLogin={()=>setAuth(true)}/>
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div style={{position:'fixed',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(79,172,254,0.4),transparent)',pointerEvents:'none',zIndex:200}}/>
+      <header style={{position:'sticky',top:0,zIndex:100,height:56,borderBottom:'1px solid var(--b1)',background:'rgba(3,8,15,0.88)',backdropFilter:'blur(24px)',display:'flex',alignItems:'center',padding:'0 32px',gap:16}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:18}}>🏥</span>
+          <span style={{fontFamily:'var(--head)',fontSize:16,fontWeight:800,background:'linear-gradient(135deg,#fff 20%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'.06em'}}>GUARDIAS EM</span>
+          <span style={{width:1,height:14,background:'var(--b2)'}}/>
+          <span style={{color:'var(--t3)',fontSize:12}}>Polygon Servicio Técnico</span>
+        </div>
+        <div style={{marginLeft:'auto',display:'flex',gap:4,alignItems:'center'}}>
+          {[['extraer','📊 Datos'],['tecnicos','👥 Técnicos']].map(([id,lb])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{padding:'5px 14px',fontSize:13,borderRadius:8,fontWeight:tab===id?600:400,background:tab===id?'rgba(79,172,254,0.12)':'transparent',color:tab===id?'var(--a)':'var(--t3)',border:tab===id?'1px solid rgba(79,172,254,0.25)':'1px solid transparent'}}>{lb}</button>
+          ))}
+          <button onClick={()=>{sessionStorage.removeItem('ga');setAuth(false)}} style={{padding:'5px 12px',fontSize:12,background:'transparent',color:'var(--t3)',border:'1px solid var(--b1)',borderRadius:8,marginLeft:8}}>↩ Salir</button>
+        </div>
+      </header>
+      <main style={{maxWidth:1440,margin:'0 auto',padding:'32px'}}>
+        {tab==='tecnicos'?<Tecnicos/>:<Extraer/>}
+      </main>
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>)
+</script>
+</body>
 </html>
