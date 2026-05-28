@@ -28,7 +28,6 @@ button{font-family:var(--font);cursor:pointer;border:none;border-radius:8px;font
 button:disabled{opacity:.35;cursor:not-allowed}
 label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:5px}
 .glass{background:linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015));border:1px solid var(--b1);border-radius:16px;backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.07)}
-.card{background:var(--glass);padding:22px 26px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -42,18 +41,16 @@ tr:nth-child(even) td{background:rgba(255,255,255,0.01)}
 <body>
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#3a5a7a;font-family:monospace">Cargando…</div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+
 <script>
 // ═══ CONFIGURACIÓN ═══════════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://oqcskptqdjqbrsuegdeu.supabase.co'
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xY3NrcHRxZGpxYnJzdWVnZGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NjE3MjQsImV4cCI6MjA5NTQzNzcyNH0.Ig0fjNky8wdUAsuqZgzY-peyLjLCzF5TehFHSZfqCT4'
 const ADMIN_PASS    = 'Rafa20ali.'
-</script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
-
-<script>
 // ═══ SUPABASE ════════════════════════════════════════════════════════════════
 window.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -201,7 +198,6 @@ const sel = (attrs, ...c) => h('select', attrs, ...c)
 const opt = (val, text, selected=false) => { const o=h('option',{value:val},text); if(selected)o.selected=true; return o }
 const lbl = (text) => h('label', {}, text)
 const span = (attrs, ...c) => h('span', attrs, ...c)
-const txt = (t, style={}) => span({style}, t)
 
 function pBtn(text, onClick, disabled=false, extraStyle={}) {
   return btn({
@@ -233,11 +229,10 @@ function glassCard(content, extraStyle={}) {
 }
 
 function secTitle(text) {
-  const el = div({style:{marginBottom:'24px'}},
+  return div({style:{marginBottom:'24px'}},
     h('h2',{style:{fontFamily:'var(--head)',fontSize:'20px',fontWeight:'700',color:'var(--t1)'}},text),
     div({style:{height:'2px',width:'36px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',marginTop:'8px',borderRadius:'2px'}})
   )
-  return el
 }
 
 function spinner() {
@@ -250,9 +245,9 @@ function fieldGroup(labelText, inputEl) {
   return div({style:{marginBottom:'0'}}, lbl(labelText), inputEl)
 }
 
-// ═══ LOGIN PAGE ══════════════════════════════════════════════════════════════
+// ═══ LOGIN ═══════════════════════════════════════════════════════════════════
 function renderLogin() {
-  const passInput = inp({type:'password',placeholder:'••••••••',autocomplete:'current-password',
+  const passInput = inp({type:'password',placeholder:'••••••••',
     style:{marginBottom:'4px'},
     onkeydown: e => { if(e.key==='Enter') doLogin() }
   })
@@ -266,9 +261,7 @@ function renderLogin() {
     }
   }
 
-  const errEl = div({style:{color:'var(--red)',fontSize:'12px',marginTop:'5px',minHeight:'18px'}},
-    state.loginErr || ''
-  )
+  const errEl = div({style:{color:'var(--red)',fontSize:'12px',marginTop:'5px',minHeight:'18px'}}, state.loginErr||'')
 
   const card = div({className:'glass up',style:{width:'400px',padding:'48px 40px',position:'relative'}},
     div({style:{position:'absolute',top:'0',left:'25%',right:'25%',height:'2px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',borderRadius:'0 0 4px 4px'}}),
@@ -277,11 +270,7 @@ function renderLogin() {
       div({style:{fontFamily:'var(--head)',fontSize:'24px',fontWeight:'800',letterSpacing:'.06em',background:'linear-gradient(135deg,#fff 30%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}},'GUARDIAS EM'),
       div({style:{color:'var(--t3)',fontSize:'12.5px',marginTop:'5px'}},'Panel de extracción · Polygon')
     ),
-    div({style:{marginBottom:'16px'}},
-      lbl('Contraseña de acceso'),
-      passInput,
-      errEl
-    ),
+    div({style:{marginBottom:'16px'}}, lbl('Contraseña de acceso'), passInput, errEl),
     pBtn('ACCEDER →', doLogin, false, {width:'100%',padding:'12px'})
   )
 
@@ -311,36 +300,30 @@ async function toggleTecnico(id, activo) {
 }
 
 function renderTecnicos() {
-  const fields = [
-    ['Nombre','nombre','text'],['Email','email','email'],['Contraseña','password','password']
-  ]
-  const inputs = {}
   const formRow = div({style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'12px',alignItems:'end'}},
-    ...fields.map(([l,k,t])=>{
-      const i = inp({type:t,placeholder:l,value:state.tecForm[k]||'',
-        oninput:e=>{ state.tecForm[k]=e.target.value }
+    ...['Nombre','Email','Contraseña'].map((l,i)=>{
+      const keys=['nombre','email','password'], types=['text','email','password']
+      const inp_el = inp({type:types[i],placeholder:l,value:state.tecForm[keys[i]]||'',
+        oninput:e=>{ state.tecForm[keys[i]]=e.target.value }
       })
-      inputs[k]=i
-      return fieldGroup(l,i)
+      return fieldGroup(l, inp_el)
     }),
     pBtn('+ Añadir', addTecnico, false, {height:'40px',padding:'0 20px'})
   )
 
   const msgEl = state.tecMsg ? div({style:{marginTop:'10px',padding:'8px 12px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'8px',color:'var(--green)',fontSize:'13px'}}, state.tecMsg) : null
 
-  const tableRows = state.tecnicos.map(t =>
-    h('tr',{},
-      h('td',{style:{fontWeight:'500'}},t.nombre),
-      h('td',{style:{color:'var(--t2)',fontFamily:'var(--mono)',fontSize:'12px'}},t.email),
-      h('td',{},badge(t.activo?'● ACTIVO':'● INACTIVO', t.activo?'green':'red')),
-      h('td',{},gBtn(t.activo?'Desactivar':'Activar',()=>toggleTecnico(t.id,t.activo),false,{padding:'4px 14px',fontSize:'12px'}))
-    )
-  )
-
   const tableEl = div({className:'glass',style:{padding:'0',overflow:'hidden'}},
     h('table',{},
       h('thead',{},h('tr',{},...['Nombre','Email','Estado',''].map(t=>h('th',{},t)))),
-      h('tbody',{},...tableRows)
+      h('tbody',{},...state.tecnicos.map(t=>
+        h('tr',{},
+          h('td',{style:{fontWeight:'500'}},t.nombre),
+          h('td',{style:{color:'var(--t2)',fontFamily:'var(--mono)',fontSize:'12px'}},t.email),
+          h('td',{},badge(t.activo?'● ACTIVO':'● INACTIVO', t.activo?'green':'red')),
+          h('td',{},gBtn(t.activo?'Desactivar':'Activar',()=>toggleTecnico(t.id,t.activo),false,{padding:'4px 14px',fontSize:'12px'}))
+        )
+      ))
     )
   )
 
@@ -369,7 +352,7 @@ async function doSearch() {
   setState({loading:true,searched:true})
   const r = getRange()
   const {data,error} = await db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso')
-  if(error) console.error(error)
+  if(error) console.error('Supabase error:', error)
   setState({avisos:data||[],loading:false})
 }
 
@@ -393,7 +376,6 @@ const ALL_COLS = [
 function renderExtraer() {
   const shift = getCurrentShift()
 
-  // Modo selector
   const modeCards = div({style:{display:'flex',gap:'10px',marginBottom:'20px'}},
     ...[
       ['actual','⚡','Guardia Actual',shift.label],
@@ -413,7 +395,6 @@ function renderExtraer() {
     ))
   )
 
-  // Controles dinámicos
   let controls
   if(state.mode==='actual') {
     controls = div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'12px 16px',background:'rgba(79,172,254,0.06)',border:'1px solid rgba(79,172,254,0.15)',borderRadius:'10px'}},
@@ -427,10 +408,9 @@ function renderExtraer() {
       opt('sab','Sábado (07:00 → 07:00 dom)',state.turno==='sab'),
       opt('dom','Domingo (07:00 → 07:00 lun)',state.turno==='dom')
     )
-    const dateI = inp({type:'date',value:state.date,onchange:e=>setState({date:e.target.value})})
     controls = div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
       div({style:{flex:'1'}},lbl('Tipo de turno'),turnoSel),
-      div({style:{flex:'1'}},lbl('Fecha inicio'),dateI)
+      div({style:{flex:'1'}},lbl('Fecha inicio'),inp({type:'date',value:state.date,onchange:e=>setState({date:e.target.value})}))
     )
   } else {
     controls = div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
@@ -439,7 +419,6 @@ function renderExtraer() {
     )
   }
 
-  // Columnas
   const pillsContainer = div({style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}},
     ...ALL_COLS.map(c=>{
       const on = state.cols.includes(c.key)
@@ -453,7 +432,6 @@ function renderExtraer() {
     })
   )
 
-  // Acciones
   const actions = div({style:{display:'flex',gap:'10px',marginTop:'4px'}},
     pBtn(state.loading?'⟳ Buscando…':'🔍 Buscar registros', doSearch, state.loading),
     state.avisos.length>0 ? gBtn(state.exporting?'Generando…':'📄 Exportar Word', async()=>{
@@ -463,16 +441,13 @@ function renderExtraer() {
     }, state.exporting||!state.cols.length) : null
   )
 
-  // Separador
-  const divider = div({style:{height:'1px',background:'var(--b1)',margin:'20px 0'}})
-
   const formCard = glassCard(div({},
-    modeCards, controls, divider,
+    modeCards, controls,
+    div({style:{height:'1px',background:'var(--b1)',margin:'20px 0'}}),
     lbl('Columnas en el Word'), pillsContainer,
     actions
   ), {marginBottom:'20px'})
 
-  // Resultados
   let results = ''
   if(state.loading) {
     results = spinner()
@@ -505,11 +480,7 @@ function renderExtraer() {
     results = div({className:'up'}, statsRow||'', tableEl)
   }
 
-  return div({className:'up'},
-    secTitle('Extracción de Registros'),
-    formCard,
-    results||''
-  )
+  return div({className:'up'}, secTitle('Extracción de Registros'), formCard, results||'')
 }
 
 // ═══ MAIN LAYOUT ═════════════════════════════════════════════════════════════
@@ -551,7 +522,6 @@ function render() {
   }
 }
 
-// Arranque
 render()
 </script>
 </body>
