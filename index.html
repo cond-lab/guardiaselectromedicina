@@ -51,7 +51,7 @@ const SUPABASE_URL  = 'https://oqcskptqdjqbrsuegdeu.supabase.co'
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xY3NrcHRxZGpxYnJzdWVnZGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NjE3MjQsImV4cCI6MjA5NTQzNzcyNH0.Ig0fjNky8wdUAsuqZgzY-peyLjLCzF5TehFHSZfqCT4'
 const ADMIN_PASS    = 'Rafa20ali.'
 
-// ═══ SUPABASE ════════════════════════════════════════════════════════════════
+// ═══ SUPABASE INITIALIZATION ═════════════════════════════════════════════════
 window.addEventListener('load', function() {
   window.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   render()
@@ -173,9 +173,10 @@ let state = {
   tecForm: {nombre:'',email:'',password:''},
 }
 
+// CORRECCIÓN 1: El estado ahora fuerza el re-renderizado completo de la interfaz de usuario
 function setState(updates) {
   Object.assign(state, updates)
-  
+  render()
 }
 
 // ═══ HELPERS UI ══════════════════════════════════════════════════════════════
@@ -183,7 +184,8 @@ const h = (tag, attrs={}, ...children) => {
   const el = document.createElement(tag)
   for(const [k,v] of Object.entries(attrs)) {
     if(k==='style'&&typeof v==='object') Object.assign(el.style, v)
-    else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v)
+    // CORRECCIÓN 2: Soporte nativo para eventos estándar indiferente de mayúsculas/minúsculas
+    else if(k.startsWith('on')) el[k.toLowerCase()] = v
     else if(k==='className') el.className = v
     else el.setAttribute(k, v)
   }
@@ -258,6 +260,8 @@ function renderLogin() {
   function doLogin() {
     if(passInput.value === ADMIN_PASS) {
       sessionStorage.setItem('ga','1')
+      // Forzar carga de técnicos limpia al cambiar de pestaña
+      state.tecnicos = []; 
       setState({page:'main',loginErr:''})
     } else {
       setState({loginErr:'Contraseña incorrecta'})
@@ -282,8 +286,12 @@ function renderLogin() {
 
 // ═══ TÉCNICOS ════════════════════════════════════════════════════════════════
 async function loadTecnicos() {
-  const {data} = await db.from('tecnicos').select('*').order('nombre')
-  setState({tecnicos: data||[]})
+  const {data, error} = await window.db.from('tecnicos').select('*').order('nombre')
+  if(!error && data) {
+    state.tecnicos = data
+    // Renderizado controlado tras la llamada asíncrona
+    render() 
+  }
 }
 
 async function addTecnico() {
@@ -291,14 +299,16 @@ async function addTecnico() {
   if(!nombre||!email||!password) return
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
   const hash = Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,'0')).join('')
-  const {error} = await db.from('tecnicos').insert({nombre, email:email.toLowerCase(), password_hash:hash})
+  
+  const {error} = await window.db.from('tecnicos').insert({nombre, email:email.toLowerCase(), password_hash:hash})
+  
   setState({tecMsg: error?'Error: '+error.message:'✓ Técnico creado', tecForm:{nombre:'',email:'',password:''}})
   loadTecnicos()
   setTimeout(()=>setState({tecMsg:''}), 3000)
 }
 
 async function toggleTecnico(id, activo) {
-  await db.from('tecnicos').update({activo:!activo}).eq('id',id)
+  await window.db.from('tecnicos').update({activo:!activo}).eq('id',id)
   loadTecnicos()
 }
 
@@ -306,10 +316,10 @@ function renderTecnicos() {
   const formRow = div({style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'12px',alignItems:'end'}},
     ...['Nombre','Email','Contraseña'].map((l,i)=>{
       const keys=['nombre','email','password'], types=['text','email','password']
-      const inp_el = inp({type:types[i],placeholder:l,value:state.tecForm[keys[i]]||'',
+      return fieldGroup(l, inp({
+        type:types[i],placeholder:l,value:state.tecForm[keys[i]]||'',
         oninput:e=>{ state.tecForm[keys[i]]=e.target.value }
-      })
-      return fieldGroup(l, inp_el)
+      }))
     }),
     pBtn('+ Añadir', addTecnico, false, {height:'40px',padding:'0 20px'})
   )
@@ -344,7 +354,7 @@ function getRange() {
   if(state.mode==='turno') {
     const d=new Date(state.date+'T12:00:00'),pad=n=>String(n).padStart(2,'0')
     const nx=new Date(d);nx.setDate(nx.getDate()+1)
-    const fmt=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`
+    const fmt=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${dt.getDate()}`
     const lb={lv:'Guardia L-V',sab:'Guardia Sábado',dom:'Guardia Domingo'}
     return{from:state.date,to:fmt(nx),label:`${lb[state.turno]} ${new Date(state.date+'T12:00:00').toLocaleDateString('es-ES')}`}
   }
@@ -354,7 +364,7 @@ function getRange() {
 async function doSearch() {
   setState({loading:true,searched:true})
   const r = getRange()
-  const {data,error} = await db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso')
+  const {data,error} = await window.db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso')
   if(error) console.error('Supabase error:', error)
   setState({avisos:data||[],loading:false})
 }
@@ -468,11 +478,11 @@ function renderExtraer() {
           div({style:{overflowX:'auto'}},
             h('table',{},
               h('thead',{},h('tr',{},...ALL_COLS.filter(c=>state.cols.includes(c.key)).map(c=>h('th',{},c.label)))),
-              h('tbody',{},...av.map(av=>
+              h('tbody',{},...av.map(item=>
                 h('tr',{},...ALL_COLS.filter(c=>state.cols.includes(c.key)).map(c=>{
                   const td = h('td',{})
                   td.style.maxWidth = c.key==='averia'||c.key==='acciones'?'280px':'auto'
-                  td.appendChild(fmtCell(c.key,av[c.key]))
+                  td.appendChild(fmtCell(c.key,item[c.key]))
                   return td
                 }))
               ))
@@ -513,19 +523,27 @@ function renderMain() {
   )
 }
 
-// ═══ RENDER ══════════════════════════════════════════════════════════════════
+// ═══ RENDER MASTER ═══════════════════════════════════════════════════════════
 function render() {
   const app = document.getElementById('app')
+  if (!app) return
   app.innerHTML = ''
+  
+  if(!window.db) {
+    app.appendChild(div({style:{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#3a5a7a',fontFamily:'monospace'}}, 'Conectando con la base de datos...'))
+    return
+  }
+
   if(state.page==='login') {
     app.appendChild(renderLogin())
   } else {
     app.appendChild(renderMain())
-    if(state.tecnicos.length===0) loadTecnicos()
+    // CORRECCIÓN 3: Carga condicional asíncrona de operarios sin bucles infinitos
+    if(state.tab === 'tecnicos' && state.tecnicos.length === 0) {
+      loadTecnicos()
+    }
   }
 }
-
-render()
 </script>
 </body>
 </html>
