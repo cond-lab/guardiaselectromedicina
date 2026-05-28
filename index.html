@@ -139,8 +139,7 @@ async function exportWord(avisos, selectedCols, label) {
 function getCurrentShift() {
   const now = new Date(), dow = now.getDay(), h = now.getHours()
   const pad = n=>String(n).padStart(2,'0')
-  const fmt = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
-  const add = (n)=>{const r=new Date(now);r.setDate(r.getDate()+n);return fmt(r)}
+  const fmt = dt => `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`  const add = (n)=>{const r=new Date(now);r.setDate(r.getDate()+n);return fmt(r)}
   const today=fmt(now), yest=add(-1), tom=add(1)
   if(dow===6) return h>=7?{label:'Guardia Sábado',from:today,to:tom}:{label:'Guardia Viernes Noche',from:yest,to:today}
   if(dow===0) return h>=7?{label:'Guardia Domingo',from:today,to:tom}:{label:'Guardia Sábado',from:yest,to:today}
