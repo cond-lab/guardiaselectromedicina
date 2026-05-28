@@ -9,9 +9,9 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#03080f;--bg2:#060e1a;--bg3:#0d1c34;--bg4:#112244;
+  --bg:#03080f;--bg3:#0d1c34;--bg4:#112244;
   --b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.12);
-  --a:#4facfe;--a2:#0070f3;
+  --a:#4facfe;
   --t1:#f0f6ff;--t2:#8ab0cc;--t3:#3a5a7a;
   --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
   --font:'DM Sans',sans-serif;--head:'Syne',sans-serif;--mono:'DM Mono',monospace;
@@ -21,8 +21,8 @@ body{background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px
 #app{min-height:100vh}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
-input,select,textarea{font-family:var(--font);background:var(--bg3);border:1px solid var(--b1);color:var(--t1);border-radius:8px;padding:9px 13px;font-size:14px;outline:none;width:100%;transition:.2s}
-input:focus,select:focus,textarea:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(79,172,254,0.12);background:var(--bg4)}
+input,select{font-family:var(--font);background:var(--bg3);border:1px solid var(--b1);color:var(--t1);border-radius:8px;padding:9px 13px;font-size:14px;outline:none;width:100%;transition:.2s}
+input:focus,select:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(79,172,254,0.12);background:var(--bg4)}
 select option{background:#0d1c34}
 button{font-family:var(--font);cursor:pointer;border:none;border-radius:8px;font-weight:600;transition:.2s}
 button:disabled{opacity:.35;cursor:not-allowed}
@@ -39,38 +39,29 @@ tr:nth-child(even) td{background:rgba(255,255,255,0.01)}
 </style>
 </head>
 <body>
-<div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#3a5a7a;font-family:monospace">Cargando…</div></div>
+<div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#3a5a7a;font-family:monospace">Cargando...</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 
 <script>
-// ═══ CONFIGURACIÓN ═══════════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://oqcskptqdjqbrsuegdeu.supabase.co'
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xY3NrcHRxZGpxYnJzdWVnZGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NjE3MjQsImV4cCI6MjA5NTQzNzcyNH0.Ig0fjNky8wdUAsuqZgzY-peyLjLCzF5TehFHSZfqCT4'
 const ADMIN_PASS    = 'Rafa20ali.'
 
-// ═══ SUPABASE INITIALIZATION ═════════════════════════════════════════════════
 window.addEventListener('load', function() {
   window.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   render()
 })
 
-// ═══ WORD EXPORT ═════════════════════════════════════════════════════════════
-const COL_LABELS = {
-  fecha_aviso:'Fecha',hora_aviso:'Hora',servicio:'Servicio',averia:'Avería',
-  acciones:'Acciones',tecnico_nombre:'Técnico',solucionado:'Resuelto',
-  fecha_fin:'Fecha Fin',hora_fin:'Hora Fin',created_at:'Registro'
-}
-const COL_PCT = {
-  fecha_aviso:7,hora_aviso:5,servicio:11,averia:22,acciones:26,
-  tecnico_nombre:11,solucionado:6,fecha_fin:7,hora_fin:5,created_at:10
-}
+// WORD EXPORT
+const COL_LABELS = {fecha_aviso:'Fecha',hora_aviso:'Hora',servicio:'Servicio',averia:'Averia',acciones:'Acciones',tecnico_nombre:'Tecnico',solucionado:'Resuelto',fecha_fin:'Fecha Fin',hora_fin:'Hora Fin',created_at:'Registro'}
+const COL_PCT = {fecha_aviso:7,hora_aviso:5,servicio:11,averia:22,acciones:26,tecnico_nombre:11,solucionado:6,fecha_fin:7,hora_fin:5,created_at:10}
 
 function fmtVal(key, val) {
-  if(val===null||val===undefined||val==='') return '—'
-  if(key==='solucionado') return val?'✓ Sí':'✗ No'
+  if(val===null||val===undefined||val==='') return '-'
+  if(key==='solucionado') return val?'Si':'No'
   if(key==='created_at') return new Date(val).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})
   if(key==='hora_aviso'||key==='hora_fin') return String(val).substring(0,5)
   if(key==='fecha_aviso'||key==='fecha_fin') return new Date(val+'T00:00:00').toLocaleDateString('es-ES')
@@ -79,468 +70,309 @@ function fmtVal(key, val) {
 
 async function exportWord(avisos, selectedCols, label) {
   try {
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-      AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign, PageOrientation } = docx
-
-    const cols = selectedCols.filter(c => COL_LABELS[c])
-    const totalPct = cols.reduce((s,c)=>s+(COL_PCT[c]||8),0)
-    const pcts = cols.map(c=>Math.floor(((COL_PCT[c]||8)/totalPct)*100))
-    pcts[pcts.length-1] += 100-pcts.reduce((a,b)=>a+b,0)
-
-    const brd = {style:BorderStyle.SINGLE,size:1,color:'C8D8E8'}
-    const brds = {top:brd,bottom:brd,left:brd,right:brd}
-
-    const hRow = new TableRow({tableHeader:true,children:cols.map((col,i)=>new TableCell({
-      borders:brds,width:{size:pcts[i],type:WidthType.PERCENTAGE},
-      shading:{fill:'1B3A5C',type:ShadingType.CLEAR},
-      margins:{top:80,bottom:80,left:100,right:100},verticalAlign:VerticalAlign.CENTER,
-      children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:COL_LABELS[col],bold:true,color:'FFFFFF',font:'Calibri',size:17})]})]
-    }))})
-
-    const dRows = avisos.map((av,ri)=>new TableRow({children:cols.map((col,i)=>new TableCell({
-      borders:brds,width:{size:pcts[i],type:WidthType.PERCENTAGE},
-      shading:{fill:ri%2===0?'FFFFFF':'EEF4FB',type:ShadingType.CLEAR},
-      margins:{top:60,bottom:60,left:100,right:100},verticalAlign:VerticalAlign.CENTER,
-      children:[new Paragraph({children:[new TextRun({
-        text:fmtVal(col,av[col]),font:'Calibri',size:16,
-        color:col==='solucionado'?(av[col]?'1a7a3c':'cc2222'):'1a2a3a',bold:col==='solucionado'
-      })]})]
-    }))}))
-
-    const table = new Table({width:{size:100,type:WidthType.PERCENTAGE},rows:[hRow,...dRows]})
-    const resolved = avisos.filter(a=>a.solucionado).length
-
-    const doc = new Document({
-      styles:{default:{document:{run:{font:'Calibri',size:20}}}},
-      sections:[{
-        properties:{page:{size:{width:12240,height:15840,orientation:PageOrientation.LANDSCAPE},margin:{top:720,right:720,bottom:720,left:720}}},
-        children:[
-          new Paragraph({spacing:{after:80},children:[new TextRun({text:'INFORME DE GUARDIAS — ELECTROMEDICINA',bold:true,size:28,font:'Calibri',color:'1B3A5C'})]}),
-          new Paragraph({spacing:{after:20},children:[
-            new TextRun({text:'Período: ',size:19,font:'Calibri',color:'333333',bold:true}),
-            new TextRun({text:label,size:19,font:'Calibri',color:'1B3A5C',bold:true}),
-            new TextRun({text:`   |   Avisos: ${avisos.length}   |   Resueltos: ${resolved}   |   Pendientes: ${avisos.length-resolved}`,size:17,font:'Calibri',color:'666666'}),
-          ]}),
-          new Paragraph({spacing:{after:20},children:[new TextRun({text:`Generado: ${new Date().toLocaleString('es-ES')}   |   Polygon Servicio Técnico · Electromedicina`,size:15,font:'Calibri',color:'999999'})]}),
-          new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:12,color:'1B3A5C',space:1}},spacing:{after:280},children:[]}),
-          table,
-        ]
-      }]
-    })
-    const blob = await Packer.toBlob(doc)
-    saveAs(blob, `guardias_${label.replace(/[\/\s·—]/g,'_')}.docx`)
+    var D = docx
+    var cols = selectedCols.filter(function(c){return COL_LABELS[c]})
+    var totalPct = cols.reduce(function(s,c){return s+(COL_PCT[c]||8)},0)
+    var pcts = cols.map(function(c){return Math.floor(((COL_PCT[c]||8)/totalPct)*100)})
+    pcts[pcts.length-1] += 100-pcts.reduce(function(a,b){return a+b},0)
+    var brd = {style:D.BorderStyle.SINGLE,size:1,color:'C8D8E8'}
+    var brds = {top:brd,bottom:brd,left:brd,right:brd}
+    var hRow = new D.TableRow({tableHeader:true,children:cols.map(function(col,i){return new D.TableCell({borders:brds,width:{size:pcts[i],type:D.WidthType.PERCENTAGE},shading:{fill:'1B3A5C',type:D.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},verticalAlign:D.VerticalAlign.CENTER,children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:COL_LABELS[col],bold:true,color:'FFFFFF',font:'Calibri',size:17})]})]})})})
+    var dRows = avisos.map(function(av,ri){return new D.TableRow({children:cols.map(function(col,i){return new D.TableCell({borders:brds,width:{size:pcts[i],type:D.WidthType.PERCENTAGE},shading:{fill:ri%2===0?'FFFFFF':'EEF4FB',type:D.ShadingType.CLEAR},margins:{top:60,bottom:60,left:100,right:100},verticalAlign:D.VerticalAlign.CENTER,children:[new D.Paragraph({children:[new D.TextRun({text:fmtVal(col,av[col]),font:'Calibri',size:16,color:col==='solucionado'?(av[col]?'1a7a3c':'cc2222'):'1a2a3a',bold:col==='solucionado'})]})]})})})} )
+    var table = new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[hRow].concat(dRows)})
+    var resolved = avisos.filter(function(a){return a.solucionado}).length
+    var doc = new D.Document({styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{properties:{page:{size:{width:12240,height:15840,orientation:D.PageOrientation.LANDSCAPE},margin:{top:720,right:720,bottom:720,left:720}}},children:[new D.Paragraph({spacing:{after:80},children:[new D.TextRun({text:'INFORME DE GUARDIAS - ELECTROMEDICINA',bold:true,size:28,font:'Calibri',color:'1B3A5C'})]}),new D.Paragraph({spacing:{after:20},children:[new D.TextRun({text:'Periodo: '+label+'   |   Avisos: '+avisos.length+'   |   Resueltos: '+resolved+'   |   Pendientes: '+(avisos.length-resolved),size:17,font:'Calibri',color:'666666'})]}),new D.Paragraph({spacing:{after:20},children:[new D.TextRun({text:'Generado: '+new Date().toLocaleString('es-ES')+'   |   Polygon Servicio Tecnico - Electromedicina',size:15,font:'Calibri',color:'999999'})]}),new D.Paragraph({border:{bottom:{style:D.BorderStyle.SINGLE,size:12,color:'1B3A5C',space:1}},spacing:{after:280},children:[]}),table]}]})
+    var blob = await D.Packer.toBlob(doc)
+    saveAs(blob, 'guardias_'+label.replace(/[\/\s]/g,'_')+'.docx')
   } catch(e) {
-    alert('Error generando Word: ' + e.message)
+    alert('Error Word: '+e.message)
     console.error(e)
   }
 }
 
-// ═══ SHIFT UTILS ═════════════════════════════════════════════════════════════
+// SHIFT UTILS
 function getCurrentShift() {
-  const now = new Date(), dow = now.getDay(), h = now.getHours()
-  const pad = n=>String(n).padStart(2,'0')
-  const fmt = dt => `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`  const today=fmt(now), yest=add(-1), tom=add(1)
-  if(dow===6) return h>=7?{label:'Guardia Sábado',from:today,to:tom}:{label:'Guardia Viernes Noche',from:yest,to:today}
-  if(dow===0) return h>=7?{label:'Guardia Domingo',from:today,to:tom}:{label:'Guardia Sábado',from:yest,to:today}
+  var now = new Date(), dow = now.getDay(), h = now.getHours()
+  var pad = function(n){return String(n).padStart(2,'0')}
+  var fmt = function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  var add = function(n){var r=new Date(now);r.setDate(r.getDate()+n);return fmt(r)}
+  var today=fmt(now), yest=add(-1), tom=add(1)
+  if(dow===6) return h>=7?{label:'Guardia Sabado',from:today,to:tom}:{label:'Guardia Viernes Noche',from:yest,to:today}
+  if(dow===0) return h>=7?{label:'Guardia Domingo',from:today,to:tom}:{label:'Guardia Sabado',from:yest,to:today}
   if(h>=20) return {label:'Guardia Noche',from:today,to:tom}
   if(h<7)   return {label:'Guardia Noche',from:yest,to:today}
-  return {label:'Próxima guardia',from:today,to:tom}
+  return {label:'Proxima guardia',from:today,to:tom}
 }
 function fmtShift(s) {
-  const f=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'2-digit'})
-  return `${f(s.from)} → ${f(s.to)}`
+  var f=function(d){return new Date(d+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'2-digit'})}
+  return f(s.from)+' - '+f(s.to)
 }
 
-// ═══ STATE ═══════════════════════════════════════════════════════════════════
-let state = {
-  page: sessionStorage.getItem('ga') ? 'main' : 'login',
-  tab: 'extraer',
-  mode: 'actual',
-  date: new Date().toISOString().split('T')[0],
-  dateFrom: new Date().toISOString().split('T')[0],
-  dateTo: new Date().toISOString().split('T')[0],
-  turno: 'lv',
-  cols: ['fecha_aviso','hora_aviso','servicio','averia','acciones','tecnico_nombre','solucionado','fecha_fin','hora_fin','created_at'],
-  avisos: [],
-  tecnicos: [],
-  loading: false,
-  searched: false,
-  exporting: false,
-  loginErr: '',
-  tecMsg: '',
-  tecForm: {nombre:'',email:'',password:''},
+// STATE
+var state = {
+  page: sessionStorage.getItem('ga')?'main':'login',
+  tab:'extraer', mode:'actual',
+  date:new Date().toISOString().split('T')[0],
+  dateFrom:new Date().toISOString().split('T')[0],
+  dateTo:new Date().toISOString().split('T')[0],
+  turno:'lv',
+  cols:['fecha_aviso','hora_aviso','servicio','averia','acciones','tecnico_nombre','solucionado','fecha_fin','hora_fin','created_at'],
+  avisos:[],tecnicos:[],loading:false,searched:false,exporting:false,
+  loginErr:'',tecMsg:'',tecForm:{nombre:'',email:'',password:''}
 }
 
-// CORRECCIÓN 1: El estado ahora fuerza el re-renderizado completo de la interfaz de usuario
-function setState(updates) {
-  Object.assign(state, updates)
-  render()
-}
+function setState(updates) { Object.assign(state,updates); render() }
 
-// ═══ HELPERS UI ══════════════════════════════════════════════════════════════
-const h = (tag, attrs={}, ...children) => {
-  const el = document.createElement(tag)
-  for(const [k,v] of Object.entries(attrs)) {
-    if(k==='style'&&typeof v==='object') Object.assign(el.style, v)
-    // CORRECCIÓN 2: Soporte nativo para eventos estándar indiferente de mayúsculas/minúsculas
-    else if(k.startsWith('on')) el[k.toLowerCase()] = v
-    else if(k==='className') el.className = v
-    else el.setAttribute(k, v)
+// DOM HELPERS
+function h(tag, attrs) {
+  var el = document.createElement(tag)
+  attrs = attrs||{}
+  for(var k in attrs) {
+    var v = attrs[k]
+    if(k==='style'&&typeof v==='object') Object.assign(el.style,v)
+    else if(k==='className') el.className=v
+    else if(k==='onclick') el.onclick=v
+    else if(k==='onchange') el.onchange=v
+    else if(k==='oninput') el.oninput=v
+    else if(k==='onkeydown') el.onkeydown=v
+    else if(k==='disabled') el.disabled=v
+    else if(k==='type') el.type=v
+    else if(k==='value') el.value=v
+    else if(k==='placeholder') el.placeholder=v
+    else el.setAttribute(k,v)
   }
-  for(const c of children.flat()) {
+  for(var i=2;i<arguments.length;i++) {
+    var c=arguments[i]
     if(c==null||c===false) continue
-    el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c)
+    if(Array.isArray(c)) { for(var j=0;j<c.length;j++) { if(c[j]) el.appendChild(typeof c[j]==='string'?document.createTextNode(c[j]):c[j]) } }
+    else el.appendChild(typeof c==='string'?document.createTextNode(c):c)
   }
   return el
 }
+function div(a){var args=[].slice.call(arguments);args.unshift('div');return h.apply(null,args)}
+function span(a){var args=[].slice.call(arguments);args.unshift('span');return h.apply(null,args)}
+function btn(a){var args=[].slice.call(arguments);args.unshift('button');return h.apply(null,args)}
+function inp(a){return h('input',a)}
+function lbl(t){return h('label',{},t)}
+function sel(a){var args=[].slice.call(arguments);args.unshift('select');return h.apply(null,args)}
+function opt(val,text,selected){var o=h('option',{value:val},text);if(selected)o.selected=true;return o}
 
-const div = (attrs, ...c) => h('div', attrs, ...c)
-const btn = (attrs, ...c) => h('button', attrs, ...c)
-const inp = (attrs) => h('input', attrs)
-const sel = (attrs, ...c) => h('select', attrs, ...c)
-const opt = (val, text, selected=false) => { const o=h('option',{value:val},text); if(selected)o.selected=true; return o }
-const lbl = (text) => h('label', {}, text)
-const span = (attrs, ...c) => h('span', attrs, ...c)
-
-function pBtn(text, onClick, disabled=false, extraStyle={}) {
-  return btn({
-    onclick: onClick, disabled,
-    style:{padding:'10px 22px',fontSize:'13.5px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',color:'#fff',borderRadius:'10px',boxShadow:disabled?'none':'0 4px 20px rgba(0,112,243,0.3)',...extraStyle}
-  }, text)
+function pBtn(text,onClick,disabled,extra) {
+  extra=extra||{}
+  return btn({onclick:onClick,disabled:!!disabled,style:Object.assign({padding:'10px 22px',fontSize:'13.5px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',color:'#fff',borderRadius:'10px',boxShadow:disabled?'none':'0 4px 20px rgba(0,112,243,0.3)'},extra)},text)
 }
-
-function gBtn(text, onClick, disabled=false, extraStyle={}) {
-  return btn({
-    onclick: onClick, disabled,
-    style:{padding:'10px 22px',fontSize:'13.5px',background:'rgba(255,255,255,0.05)',color:'var(--t2)',border:'1px solid var(--b1)',borderRadius:'10px',...extraStyle}
-  }, text)
+function gBtn(text,onClick,disabled,extra) {
+  extra=extra||{}
+  return btn({onclick:onClick,disabled:!!disabled,style:Object.assign({padding:'10px 22px',fontSize:'13.5px',background:'rgba(255,255,255,0.05)',color:'var(--t2)',border:'1px solid var(--b1)',borderRadius:'10px'},extra)},text)
 }
-
-function badge(text, color='blue') {
-  const colors = {
-    blue: ['rgba(79,172,254,0.12)','#4facfe','rgba(79,172,254,0.3)'],
-    green:['rgba(16,185,129,0.12)','#10b981','rgba(16,185,129,0.3)'],
-    red:  ['rgba(239,68,68,0.12)', '#ef4444','rgba(239,68,68,0.3)'],
-    yellow:['rgba(245,158,11,0.12)','#f59e0b','rgba(245,158,11,0.3)'],
-  }
-  const [bg,fg,bd] = colors[color]||colors.blue
-  return span({style:{display:'inline-flex',alignItems:'center',gap:'4px',padding:'2px 9px',borderRadius:'6px',fontSize:'11px',fontWeight:'700',letterSpacing:'.06em',fontFamily:'var(--mono)',background:bg,color:fg,border:`1px solid ${bd}`}}, text)
+function badge(text,color) {
+  var colors={blue:['rgba(79,172,254,0.12)','#4facfe','rgba(79,172,254,0.3)'],green:['rgba(16,185,129,0.12)','#10b981','rgba(16,185,129,0.3)'],red:['rgba(239,68,68,0.12)','#ef4444','rgba(239,68,68,0.3)'],yellow:['rgba(245,158,11,0.12)','#f59e0b','rgba(245,158,11,0.3)']}
+  var c=colors[color||'blue']
+  return span({style:{display:'inline-flex',alignItems:'center',padding:'2px 9px',borderRadius:'6px',fontSize:'11px',fontWeight:'700',fontFamily:'var(--mono)',background:c[0],color:c[1],border:'1px solid '+c[2]}},text)
 }
-
-function glassCard(content, extraStyle={}) {
-  return div({className:'glass',style:{padding:'22px 26px',...extraStyle}}, content)
+function glassCard(content,extra) {
+  return div({className:'glass',style:Object.assign({padding:'22px 26px'},extra||{})},content)
 }
-
 function secTitle(text) {
   return div({style:{marginBottom:'24px'}},
     h('h2',{style:{fontFamily:'var(--head)',fontSize:'20px',fontWeight:'700',color:'var(--t1)'}},text),
     div({style:{height:'2px',width:'36px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',marginTop:'8px',borderRadius:'2px'}})
   )
 }
-
 function spinner() {
   return div({style:{textAlign:'center',padding:'48px'}},
     div({style:{display:'inline-block',width:'26px',height:'26px',border:'2px solid rgba(255,255,255,0.08)',borderTop:'2px solid var(--a)',borderRadius:'50%',animation:'spin .7s linear infinite'}})
   )
 }
 
-function fieldGroup(labelText, inputEl) {
-  return div({style:{marginBottom:'0'}}, lbl(labelText), inputEl)
-}
-
-// ═══ LOGIN ═══════════════════════════════════════════════════════════════════
+// LOGIN
 function renderLogin() {
-  const passInput = inp({type:'password',placeholder:'••••••••',
-    style:{marginBottom:'4px'},
-    onkeydown: e => { if(e.key==='Enter') doLogin() }
-  })
-
+  var passInput = inp({type:'password',placeholder:'••••••••',style:{marginBottom:'4px'},onkeydown:function(e){if(e.key==='Enter')doLogin()}})
+  var errEl = div({style:{color:'var(--red)',fontSize:'12px',marginTop:'5px',minHeight:'18px'}},state.loginErr||'')
   function doLogin() {
-    if(passInput.value === ADMIN_PASS) {
-      sessionStorage.setItem('ga','1')
-      // Forzar carga de técnicos limpia al cambiar de pestaña
-      state.tecnicos = []; 
-      setState({page:'main',loginErr:''})
-    } else {
-      setState({loginErr:'Contraseña incorrecta'})
-    }
+    if(passInput.value===ADMIN_PASS){sessionStorage.setItem('ga','1');setState({page:'main',loginErr:''})}
+    else setState({loginErr:'Contrasena incorrecta'})
   }
-
-  const errEl = div({style:{color:'var(--red)',fontSize:'12px',marginTop:'5px',minHeight:'18px'}}, state.loginErr||'')
-
-  const card = div({className:'glass up',style:{width:'400px',padding:'48px 40px',position:'relative'}},
+  var card = div({className:'glass up',style:{width:'400px',padding:'48px 40px',position:'relative'}},
     div({style:{position:'absolute',top:'0',left:'25%',right:'25%',height:'2px',background:'linear-gradient(135deg,#0070f3,#00c6fb)',borderRadius:'0 0 4px 4px'}}),
     div({style:{textAlign:'center',marginBottom:'36px'}},
-      div({style:{width:'56px',height:'56px',borderRadius:'16px',margin:'0 auto 16px',background:'linear-gradient(135deg,var(--bg4),var(--bg3))',border:'1px solid var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'26px',boxShadow:'0 0 30px rgba(79,172,254,0.15)'}},'🏥'),
-      div({style:{fontFamily:'var(--head)',fontSize:'24px',fontWeight:'800',letterSpacing:'.06em',background:'linear-gradient(135deg,#fff 30%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}},'GUARDIAS EM'),
-      div({style:{color:'var(--t3)',fontSize:'12.5px',marginTop:'5px'}},'Panel de extracción · Polygon')
+      div({style:{width:'56px',height:'56px',borderRadius:'16px',margin:'0 auto 16px',background:'linear-gradient(135deg,var(--bg4),var(--bg3))',border:'1px solid var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'26px'}},'🏥'),
+      div({style:{fontFamily:'var(--head)',fontSize:'24px',fontWeight:'800',background:'linear-gradient(135deg,#fff 30%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}},'GUARDIAS EM'),
+      div({style:{color:'var(--t3)',fontSize:'12px',marginTop:'5px'}},'Panel de extraccion - Polygon')
     ),
-    div({style:{marginBottom:'16px'}}, lbl('Contraseña de acceso'), passInput, errEl),
-    pBtn('ACCEDER →', doLogin, false, {width:'100%',padding:'12px'})
+    div({style:{marginBottom:'16px'}},lbl('Contrasena de acceso'),passInput,errEl),
+    pBtn('ACCEDER', doLogin, false, {width:'100%',padding:'12px'})
   )
-
-  return div({style:{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,112,243,0.12) 0%,transparent 65%)'}}, card)
+  return div({style:{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,112,243,0.12) 0%,transparent 65%)'}},card)
 }
 
-// ═══ TÉCNICOS ════════════════════════════════════════════════════════════════
-async function loadTecnicos() {
-  const {data, error} = await window.db.from('tecnicos').select('*').order('nombre')
-  if(!error && data) {
-    state.tecnicos = data
-    // Renderizado controlado tras la llamada asíncrona
-    render() 
-  }
+// TECNICOS
+function loadTecnicos() {
+  window.db.from('tecnicos').select('*').order('nombre').then(function(r){
+    if(!r.error){state.tecnicos=r.data||[];render()}
+  })
 }
-
-async function addTecnico() {
-  const {nombre,email,password} = state.tecForm
-  if(!nombre||!email||!password) return
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
-  const hash = Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,'0')).join('')
-  
-  const {error} = await window.db.from('tecnicos').insert({nombre, email:email.toLowerCase(), password_hash:hash})
-  
-  setState({tecMsg: error?'Error: '+error.message:'✓ Técnico creado', tecForm:{nombre:'',email:'',password:''}})
-  loadTecnicos()
-  setTimeout(()=>setState({tecMsg:''}), 3000)
+function addTecnico() {
+  var f=state.tecForm
+  if(!f.nombre||!f.email||!f.password)return
+  crypto.subtle.digest('SHA-256',new TextEncoder().encode(f.password)).then(function(bytes){
+    var hash=Array.from(new Uint8Array(bytes)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')
+    window.db.from('tecnicos').insert({nombre:f.nombre,email:f.email.toLowerCase(),password_hash:hash}).then(function(r){
+      setState({tecMsg:r.error?'Error: '+r.error.message:'Tecnico creado',tecForm:{nombre:'',email:'',password:''}})
+      loadTecnicos()
+      setTimeout(function(){setState({tecMsg:''})},3000)
+    })
+  })
 }
-
-async function toggleTecnico(id, activo) {
-  await window.db.from('tecnicos').update({activo:!activo}).eq('id',id)
-  loadTecnicos()
+function toggleTecnico(id,activo) {
+  window.db.from('tecnicos').update({activo:!activo}).eq('id',id).then(function(){loadTecnicos()})
 }
-
 function renderTecnicos() {
-  const formRow = div({style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'12px',alignItems:'end'}},
-    ...['Nombre','Email','Contraseña'].map((l,i)=>{
-      const keys=['nombre','email','password'], types=['text','email','password']
-      return fieldGroup(l, inp({
-        type:types[i],placeholder:l,value:state.tecForm[keys[i]]||'',
-        oninput:e=>{ state.tecForm[keys[i]]=e.target.value }
-      }))
-    }),
-    pBtn('+ Añadir', addTecnico, false, {height:'40px',padding:'0 20px'})
+  var keys=['nombre','email','password'], labels=['Nombre','Email','Contrasena'], types=['text','email','password']
+  var formRow=div({style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'12px',alignItems:'end'}},
+    div({style:{marginBottom:'0'}},lbl('Nombre'),inp({type:'text',placeholder:'Nombre',value:state.tecForm.nombre||'',oninput:function(e){state.tecForm.nombre=e.target.value}})),
+    div({style:{marginBottom:'0'}},lbl('Email'),inp({type:'email',placeholder:'Email',value:state.tecForm.email||'',oninput:function(e){state.tecForm.email=e.target.value}})),
+    div({style:{marginBottom:'0'}},lbl('Contrasena'),inp({type:'password',placeholder:'Contrasena',value:state.tecForm.password||'',oninput:function(e){state.tecForm.password=e.target.value}})),
+    pBtn('+ Anadir',addTecnico,false,{height:'40px',padding:'0 20px'})
   )
-
-  const msgEl = state.tecMsg ? div({style:{marginTop:'10px',padding:'8px 12px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'8px',color:'var(--green)',fontSize:'13px'}}, state.tecMsg) : null
-
-  const tableEl = div({className:'glass',style:{padding:'0',overflow:'hidden'}},
+  var msgEl=state.tecMsg?div({style:{marginTop:'10px',padding:'8px 12px',background:'rgba(16,185,129,0.08)',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'8px',color:'var(--green)',fontSize:'13px'}},state.tecMsg):null
+  var rows=state.tecnicos.map(function(t){
+    return h('tr',{},
+      h('td',{style:{fontWeight:'500'}},t.nombre),
+      h('td',{style:{color:'var(--t2)',fontFamily:'var(--mono)',fontSize:'12px'}},t.email),
+      h('td',{},badge(t.activo?'ACTIVO':'INACTIVO',t.activo?'green':'red')),
+      h('td',{},gBtn(t.activo?'Desactivar':'Activar',function(){toggleTecnico(t.id,t.activo)},false,{padding:'4px 14px',fontSize:'12px'}))
+    )
+  })
+  var tableEl=div({className:'glass',style:{padding:'0',overflow:'hidden'}},
     h('table',{},
-      h('thead',{},h('tr',{},...['Nombre','Email','Estado',''].map(t=>h('th',{},t)))),
-      h('tbody',{},...state.tecnicos.map(t=>
-        h('tr',{},
-          h('td',{style:{fontWeight:'500'}},t.nombre),
-          h('td',{style:{color:'var(--t2)',fontFamily:'var(--mono)',fontSize:'12px'}},t.email),
-          h('td',{},badge(t.activo?'● ACTIVO':'● INACTIVO', t.activo?'green':'red')),
-          h('td',{},gBtn(t.activo?'Desactivar':'Activar',()=>toggleTecnico(t.id,t.activo),false,{padding:'4px 14px',fontSize:'12px'}))
-        )
-      ))
+      h('thead',{},h('tr',{},...['Nombre','Email','Estado',''].map(function(t){return h('th',{},t)}))),
+      h('tbody',{},...rows)
     )
   )
-
-  return div({className:'up'},
-    secTitle('Gestión de Técnicos'),
-    glassCard(div({}, formRow, msgEl||''), {marginBottom:'16px'}),
-    tableEl
-  )
+  return div({className:'up'},secTitle('Gestion de Tecnicos'),glassCard(div({},formRow,msgEl||''),{marginBottom:'16px'}),tableEl)
 }
 
-// ═══ EXTRAER ═════════════════════════════════════════════════════════════════
+// EXTRAER
 function getRange() {
-  const shift = getCurrentShift()
+  var shift=getCurrentShift()
   if(state.mode==='actual') return {from:shift.from,to:shift.to,label:shift.label}
   if(state.mode==='turno') {
-    const d=new Date(state.date+'T12:00:00'),pad=n=>String(n).padStart(2,'0')
-    const nx=new Date(d);nx.setDate(nx.getDate()+1)
-    const fmt=dt=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${dt.getDate()}`
-    const lb={lv:'Guardia L-V',sab:'Guardia Sábado',dom:'Guardia Domingo'}
-    return{from:state.date,to:fmt(nx),label:`${lb[state.turno]} ${new Date(state.date+'T12:00:00').toLocaleDateString('es-ES')}`}
+    var d=new Date(state.date+'T12:00:00'),pad=function(n){return String(n).padStart(2,'0')}
+    var nx=new Date(d);nx.setDate(nx.getDate()+1)
+    var fmt=function(dt){return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate())}
+    var lb={lv:'Guardia L-V',sab:'Guardia Sabado',dom:'Guardia Domingo'}
+    return{from:state.date,to:fmt(nx),label:lb[state.turno]+' '+new Date(state.date+'T12:00:00').toLocaleDateString('es-ES')}
   }
-  return{from:state.dateFrom,to:state.dateTo,label:`${new Date(state.dateFrom+'T12:00:00').toLocaleDateString('es-ES')} — ${new Date(state.dateTo+'T12:00:00').toLocaleDateString('es-ES')}`}
+  return{from:state.dateFrom,to:state.dateTo,label:new Date(state.dateFrom+'T12:00:00').toLocaleDateString('es-ES')+' - '+new Date(state.dateTo+'T12:00:00').toLocaleDateString('es-ES')}
 }
-
-async function doSearch() {
+function doSearch() {
   setState({loading:true,searched:true})
-  const r = getRange()
-  const {data,error} = await window.db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso')
-  if(error) console.error('Supabase error:', error)
-  setState({avisos:data||[],loading:false})
+  var r=getRange()
+  window.db.from('avisos').select('*').gte('fecha_aviso',r.from).lte('fecha_aviso',r.to).order('fecha_aviso').order('hora_aviso').then(function(res){
+    if(res.error) console.error('Error:',res.error)
+    setState({avisos:res.data||[],loading:false})
+  })
 }
-
 function fmtCell(key,val) {
   if(val===null||val===undefined||val==='') return span({style:{color:'var(--t3)'}},'—')
-  if(key==='solucionado') return badge(val?'✓ Sí':'✗ No', val?'green':'red')
+  if(key==='solucionado') return badge(val?'Si':'No',val?'green':'red')
   if(key==='hora_aviso'||key==='hora_fin') return span({style:{fontFamily:'var(--mono)',fontSize:'12px'}},String(val).substring(0,5))
   if(key==='fecha_aviso'||key==='fecha_fin') return span({style:{fontFamily:'var(--mono)',fontSize:'12px'}},new Date(val+'T12:00:00').toLocaleDateString('es-ES'))
   if(key==='created_at') return span({style:{fontFamily:'var(--mono)',fontSize:'11px',color:'var(--t3)'}},new Date(val).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'}))
   return span({style:{fontSize:key==='averia'||key==='acciones'?'12px':'13px',lineHeight:'1.45'}},String(val))
 }
-
-const ALL_COLS = [
+var ALL_COLS=[
   {key:'fecha_aviso',label:'Fecha Aviso'},{key:'hora_aviso',label:'Hora Aviso'},
-  {key:'servicio',label:'Servicio'},{key:'averia',label:'Avería'},
-  {key:'acciones',label:'Acciones'},{key:'tecnico_nombre',label:'Técnico'},
+  {key:'servicio',label:'Servicio'},{key:'averia',label:'Averia'},
+  {key:'acciones',label:'Acciones'},{key:'tecnico_nombre',label:'Tecnico'},
   {key:'solucionado',label:'Solucionado'},{key:'fecha_fin',label:'Fecha Fin'},
-  {key:'hora_fin',label:'Hora Fin'},{key:'created_at',label:'Registro'},
+  {key:'hora_fin',label:'Hora Fin'},{key:'created_at',label:'Registro'}
 ]
-
 function renderExtraer() {
-  const shift = getCurrentShift()
-
-  const modeCards = div({style:{display:'flex',gap:'10px',marginBottom:'20px'}},
-    ...[
-      ['actual','⚡','Guardia Actual',shift.label],
-      ['turno','📅','Por Turno','L-V · Sáb · Dom'],
-      ['libre','🗓','Rango Libre','Fechas personalizadas'],
-    ].map(([v,ic,lb,sub])=>btn({
-      onclick:()=>setState({mode:v}),
-      style:{flex:'1',padding:'14px 16px',textAlign:'left',borderRadius:'12px',
-        background:state.mode===v?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',
-        border:`1px solid ${state.mode===v?'rgba(79,172,254,0.35)':'var(--b1)'}`,
-        color:state.mode===v?'var(--t1)':'var(--t2)',
-        boxShadow:state.mode===v?'0 0 24px rgba(79,172,254,0.1)':'none',
-      }},
-      div({style:{fontSize:'18px',marginBottom:'6px'}},ic),
-      div({style:{fontSize:'13px',fontWeight:'700',marginBottom:'3px'}},lb),
-      div({style:{fontSize:'11px',color:state.mode===v?'var(--a)':'var(--t3)'}},sub)
-    ))
+  var shift=getCurrentShift()
+  var modeCards=div({style:{display:'flex',gap:'10px',marginBottom:'20px'}},
+    ...[['actual','Guardia Actual',shift.label],['turno','Por Turno','L-V / Sab / Dom'],['libre','Rango Libre','Fechas personalizadas']].map(function(m){
+      return btn({onclick:function(){setState({mode:m[0]})},style:{flex:'1',padding:'14px 16px',textAlign:'left',borderRadius:'12px',background:state.mode===m[0]?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',border:'1px solid '+(state.mode===m[0]?'rgba(79,172,254,0.35)':'var(--b1)'),color:state.mode===m[0]?'var(--t1)':'var(--t2)'}},
+        div({style:{fontSize:'13px',fontWeight:'700',marginBottom:'3px'}},m[1]),
+        div({style:{fontSize:'11px',color:state.mode===m[0]?'var(--a)':'var(--t3)'}},m[2])
+      )
+    })
   )
-
-  let controls
+  var controls
   if(state.mode==='actual') {
-    controls = div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'12px 16px',background:'rgba(79,172,254,0.06)',border:'1px solid rgba(79,172,254,0.15)',borderRadius:'10px'}},
-      span({style:{width:'8px',height:'8px',borderRadius:'50%',background:'var(--a)',animation:'pulse 2s infinite',flexShrink:'0'}}),
+    controls=div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'12px 16px',background:'rgba(79,172,254,0.06)',border:'1px solid rgba(79,172,254,0.15)',borderRadius:'10px'}},
+      span({style:{width:'8px',height:'8px',borderRadius:'50%',background:'var(--a)',animation:'pulse 2s infinite'}}),
       span({style:{fontWeight:'600',color:'var(--a)',fontSize:'13px'}},shift.label),
       span({style:{color:'var(--t3)',fontSize:'12px'}},fmtShift(shift))
     )
   } else if(state.mode==='turno') {
-    const turnoSel = sel({style:{width:'100%'},onchange:e=>setState({turno:e.target.value})},
-      opt('lv','L-V Noche (20:00 → 07:00)',state.turno==='lv'),
-      opt('sab','Sábado (07:00 → 07:00 dom)',state.turno==='sab'),
-      opt('dom','Domingo (07:00 → 07:00 lun)',state.turno==='dom')
-    )
-    controls = div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
-      div({style:{flex:'1'}},lbl('Tipo de turno'),turnoSel),
-      div({style:{flex:'1'}},lbl('Fecha inicio'),inp({type:'date',value:state.date,onchange:e=>setState({date:e.target.value})}))
+    controls=div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
+      div({style:{flex:'1'}},lbl('Tipo'),sel({onchange:function(e){setState({turno:e.target.value})}},
+        opt('lv','L-V Noche (20:00-07:00)',state.turno==='lv'),
+        opt('sab','Sabado (07:00-07:00)',state.turno==='sab'),
+        opt('dom','Domingo (07:00-07:00)',state.turno==='dom')
+      )),
+      div({style:{flex:'1'}},lbl('Fecha'),inp({type:'date',value:state.date,onchange:function(e){setState({date:e.target.value})}}))
     )
   } else {
-    controls = div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
-      div({style:{flex:'1'}},lbl('Desde'),inp({type:'date',value:state.dateFrom,onchange:e=>setState({dateFrom:e.target.value})})),
-      div({style:{flex:'1'}},lbl('Hasta'),inp({type:'date',value:state.dateTo,onchange:e=>setState({dateTo:e.target.value})}))
-    )
+    controls=div({style:{display:'flex',gap:'14px',alignItems:'flex-end'}},
+      div({style:{flex:'1'}},lbl('Desde'),inp({type:'date',value:state.dateFrom,onchange:function(e){setState({dateFrom:e.target.value})}})),
+      div({style:{flex:'1'}},lbl('Hasta'),inp({type:'date',value:state.dateTo,onchange:function(e){setState({dateTo:e.target.value})}})
+    ))
   }
-
-  const pillsContainer = div({style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}},
-    ...ALL_COLS.map(c=>{
-      const on = state.cols.includes(c.key)
-      return btn({
-        onclick:()=>setState({cols: on?state.cols.filter(k=>k!==c.key):[...state.cols,c.key]}),
-        style:{padding:'5px 13px',fontSize:'12px',fontWeight:'600',borderRadius:'20px',
-          background:on?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',
-          color:on?'var(--a)':'var(--t3)',
-          border:`1px solid ${on?'rgba(79,172,254,0.3)':'var(--b1)'}`}
-      }, (on?'✓ ':'')+c.label)
+  var pills=div({style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'20px'}},
+    ...ALL_COLS.map(function(c){
+      var on=state.cols.indexOf(c.key)>=0
+      return btn({onclick:function(){setState({cols:on?state.cols.filter(function(k){return k!==c.key}):[].concat(state.cols,[c.key])})},style:{padding:'5px 13px',fontSize:'12px',fontWeight:'600',borderRadius:'20px',background:on?'rgba(79,172,254,0.1)':'rgba(255,255,255,0.03)',color:on?'var(--a)':'var(--t3)',border:'1px solid '+(on?'rgba(79,172,254,0.3)':'var(--b1)')}},(on?'+ ':'')+c.label)
     })
   )
-
-  const actions = div({style:{display:'flex',gap:'10px',marginTop:'4px'}},
-    pBtn(state.loading?'⟳ Buscando…':'🔍 Buscar registros', doSearch, state.loading),
-    state.avisos.length>0 ? gBtn(state.exporting?'Generando…':'📄 Exportar Word', async()=>{
+  var actions=div({style:{display:'flex',gap:'10px',marginTop:'4px'}},
+    pBtn(state.loading?'Buscando...':'Buscar registros',doSearch,state.loading),
+    state.avisos.length>0?gBtn(state.exporting?'Generando...':'Exportar Word',function(){
       setState({exporting:true})
-      await exportWord(state.avisos, state.cols, getRange().label)
-      setState({exporting:false})
-    }, state.exporting||!state.cols.length) : null
+      exportWord(state.avisos,state.cols,getRange().label).then(function(){setState({exporting:false})})
+    },state.exporting||!state.cols.length):null
   )
-
-  const formCard = glassCard(div({},
-    modeCards, controls,
-    div({style:{height:'1px',background:'var(--b1)',margin:'20px 0'}}),
-    lbl('Columnas en el Word'), pillsContainer,
-    actions
-  ), {marginBottom:'20px'})
-
-  let results = ''
-  if(state.loading) {
-    results = spinner()
-  } else if(state.searched) {
-    const av = state.avisos
-    const statsRow = av.length>0 ? div({style:{display:'flex',gap:'8px',marginBottom:'14px',flexWrap:'wrap'}},
-      badge(`${av.length} AVISOS`,'blue'),
-      badge(`✓ ${av.filter(a=>a.solucionado).length} RESUELTOS`,'green'),
-      badge(`⏳ ${av.filter(a=>!a.solucionado).length} PENDIENTES`,'yellow')
-    ) : null
-
-    const tableEl = av.length===0
-      ? glassCard(div({style:{textAlign:'center',padding:'32px',color:'var(--t3)'}},'No hay avisos para este período.'))
-      : div({className:'glass',style:{padding:'0',overflow:'hidden'}},
-          div({style:{overflowX:'auto'}},
-            h('table',{},
-              h('thead',{},h('tr',{},...ALL_COLS.filter(c=>state.cols.includes(c.key)).map(c=>h('th',{},c.label)))),
-              h('tbody',{},...av.map(item=>
-                h('tr',{},...ALL_COLS.filter(c=>state.cols.includes(c.key)).map(c=>{
-                  const td = h('td',{})
-                  td.style.maxWidth = c.key==='averia'||c.key==='acciones'?'280px':'auto'
-                  td.appendChild(fmtCell(c.key,item[c.key]))
-                  return td
-                }))
-              ))
-            )
-          )
-        )
-
-    results = div({className:'up'}, statsRow||'', tableEl)
+  var formCard=glassCard(div({},modeCards,controls,div({style:{height:'1px',background:'var(--b1)',margin:'20px 0'}}),lbl('Columnas en el Word'),pills,actions),{marginBottom:'20px'})
+  var results=''
+  if(state.loading){results=spinner()}
+  else if(state.searched){
+    var av=state.avisos
+    var stats=av.length>0?div({style:{display:'flex',gap:'8px',marginBottom:'14px'}},badge(av.length+' AVISOS','blue'),badge(av.filter(function(a){return a.solucionado}).length+' RESUELTOS','green'),badge(av.filter(function(a){return !a.solucionado}).length+' PENDIENTES','yellow')):null
+    var tableEl=av.length===0?glassCard(div({style:{textAlign:'center',padding:'32px',color:'var(--t3)'}},'No hay avisos para este periodo.')):div({className:'glass',style:{padding:'0',overflow:'hidden'}},div({style:{overflowX:'auto'}},h('table',{},h('thead',{},h('tr',{},...ALL_COLS.filter(function(c){return state.cols.indexOf(c.key)>=0}).map(function(c){return h('th',{},c.label)}))),h('tbody',{},...av.map(function(item){return h('tr',{},...ALL_COLS.filter(function(c){return state.cols.indexOf(c.key)>=0}).map(function(c){var td=h('td',{});if(c.key==='averia'||c.key==='acciones')td.style.maxWidth='280px';td.appendChild(fmtCell(c.key,item[c.key]));return td}))})))))
+    results=div({className:'up'},stats||'',tableEl)
   }
-
-  return div({className:'up'}, secTitle('Extracción de Registros'), formCard, results||'')
+  return div({className:'up'},secTitle('Extraccion de Registros'),formCard,results||'')
 }
 
-// ═══ MAIN LAYOUT ═════════════════════════════════════════════════════════════
+// MAIN
 function renderMain() {
-  const header = h('header',{style:{position:'sticky',top:'0',zIndex:'100',height:'56px',borderBottom:'1px solid var(--b1)',background:'rgba(3,8,15,0.9)',backdropFilter:'blur(24px)',display:'flex',alignItems:'center',padding:'0 32px',gap:'16px'}},
+  var header=h('header',{style:{position:'sticky',top:'0',zIndex:'100',height:'56px',borderBottom:'1px solid var(--b1)',background:'rgba(3,8,15,0.9)',backdropFilter:'blur(24px)',display:'flex',alignItems:'center',padding:'0 32px',gap:'16px'}},
     div({style:{display:'flex',alignItems:'center',gap:'10px'}},
       span({style:{fontSize:'18px'}},'🏥'),
-      span({style:{fontFamily:'var(--head)',fontSize:'16px',fontWeight:'800',background:'linear-gradient(135deg,#fff 20%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'.06em'}},'GUARDIAS EM'),
+      span({style:{fontFamily:'var(--head)',fontSize:'16px',fontWeight:'800',background:'linear-gradient(135deg,#fff 20%,var(--a))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}},'GUARDIAS EM'),
       span({style:{width:'1px',height:'14px',background:'var(--b2)'}}),
-      span({style:{color:'var(--t3)',fontSize:'12px'}},'Polygon Servicio Técnico')
+      span({style:{color:'var(--t3)',fontSize:'12px'}},'Polygon Servicio Tecnico')
     ),
     div({style:{marginLeft:'auto',display:'flex',gap:'4px',alignItems:'center'}},
-      ...[['extraer','📊 Datos'],['tecnicos','👥 Técnicos']].map(([id,lb])=>
-        btn({onclick:()=>setState({tab:id}),style:{padding:'5px 14px',fontSize:'13px',borderRadius:'8px',fontWeight:state.tab===id?'600':'400',background:state.tab===id?'rgba(79,172,254,0.12)':'transparent',color:state.tab===id?'var(--a)':'var(--t3)',border:state.tab===id?'1px solid rgba(79,172,254,0.25)':'1px solid transparent'}},lb)
-      ),
-      btn({onclick:()=>{sessionStorage.removeItem('ga');setState({page:'login'})},style:{padding:'5px 12px',fontSize:'12px',background:'transparent',color:'var(--t3)',border:'1px solid var(--b1)',borderRadius:'8px',marginLeft:'8px'}},'↩ Salir')
+      ...[['extraer','Datos'],['tecnicos','Tecnicos']].map(function(t){
+        return btn({onclick:function(){setState({tab:t[0]})},style:{padding:'5px 14px',fontSize:'13px',borderRadius:'8px',fontWeight:state.tab===t[0]?'600':'400',background:state.tab===t[0]?'rgba(79,172,254,0.12)':'transparent',color:state.tab===t[0]?'var(--a)':'var(--t3)',border:state.tab===t[0]?'1px solid rgba(79,172,254,0.25)':'1px solid transparent'}},t[1])
+      }),
+      btn({onclick:function(){sessionStorage.removeItem('ga');setState({page:'login'})},style:{padding:'5px 12px',fontSize:'12px',background:'transparent',color:'var(--t3)',border:'1px solid var(--b1)',borderRadius:'8px',marginLeft:'8px'}},'Salir')
     )
   )
-
-  const content = div({style:{maxWidth:'1440px',margin:'0 auto',padding:'32px'}},
-    state.tab==='tecnicos' ? renderTecnicos() : renderExtraer()
-  )
-
-  return div({style:{minHeight:'100vh'}},
-    div({style:{position:'fixed',top:'0',left:'0',right:'0',height:'1px',background:'linear-gradient(90deg,transparent,rgba(79,172,254,0.4),transparent)',pointerEvents:'none',zIndex:'200'}}),
-    header, content
-  )
+  var content=div({style:{maxWidth:'1440px',margin:'0 auto',padding:'32px'}},state.tab==='tecnicos'?renderTecnicos():renderExtraer())
+  return div({style:{minHeight:'100vh'}},header,content)
 }
 
-// ═══ RENDER MASTER ═══════════════════════════════════════════════════════════
 function render() {
-  const app = document.getElementById('app')
-  if (!app) return
-  app.innerHTML = ''
-  
-  if(!window.db) {
-    app.appendChild(div({style:{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#3a5a7a',fontFamily:'monospace'}}, 'Conectando con la base de datos...'))
-    return
-  }
-
-  if(state.page==='login') {
-    app.appendChild(renderLogin())
-  } else {
-    app.appendChild(renderMain())
-    // CORRECCIÓN 3: Carga condicional asíncrona de operarios sin bucles infinitos
-    if(state.tab === 'tecnicos' && state.tecnicos.length === 0) {
-      loadTecnicos()
-    }
-  }
+  var app=document.getElementById('app')
+  if(!app)return
+  app.innerHTML=''
+  if(!window.db){app.appendChild(div({style:{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#3a5a7a',fontFamily:'monospace'}},'Conectando...'));return}
+  if(state.page==='login'){app.appendChild(renderLogin())}
+  else{app.appendChild(renderMain());if(state.tab==='tecnicos'&&state.tecnicos.length===0)loadTecnicos()}
 }
 </script>
 </body>
