@@ -68,34 +68,41 @@ function fmtVal(key, val) {
 
 function exportWord(avisos, selectedCols, label) {
   const cols = selectedCols.filter(c => COL_LABELS[c])
-  
   const headerRow = cols.map(c => `<th style="background:#1B3A5C;color:#fff;padding:8px;border:1px solid #ccc;font-size:11pt">${COL_LABELS[c]}</th>`).join('')
-  
   const dataRows = avisos.map((av, i) => {
     const bg = i % 2 === 0 ? '#ffffff' : '#eef4fb'
     const cells = cols.map(c => `<td style="padding:7px;border:1px solid #ccc;background:${bg};font-size:10pt">${fmtVal(c, av[c])}</td>`).join('')
     return `<tr>${cells}</tr>`
   }).join('')
-
   const resolved = avisos.filter(a => a.solucionado).length
   const html = `
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head><meta charset="UTF-8">
 <style>
-  body{font-family:Calibri,sans-serif}
-  h1{color:#1B3A5C;font-size:16pt}
-  p{color:#666;font-size:10pt}
-  table{border-collapse:collapse;width:100%}
-  @page{size:A4 landscape;margin:1.5cm}
+  @page WordSection1{size:842pt 595pt;mso-page-orientation:landscape;margin:40pt}
+  div.WordSection1{page:WordSection1}
+  body{font-family:Calibri,sans-serif;margin:0}
+  h1{color:#1B3A5C;font-size:16pt;margin-bottom:6pt}
+  p{color:#666;font-size:10pt;margin:2pt 0}
+  table{border-collapse:collapse;width:100%;table-layout:fixed}
 </style>
 </head>
-<body>
+<body><div class="WordSection1">
 <h1>INFORME DE GUARDIAS - ELECTROMEDICINA</h1>
 <p>Periodo: <b>${label}</b> &nbsp;|&nbsp; Avisos: ${avisos.length} &nbsp;|&nbsp; Resueltos: ${resolved} &nbsp;|&nbsp; Pendientes: ${avisos.length - resolved}</p>
 <p>Generado: ${new Date().toLocaleString('es-ES')} &nbsp;|&nbsp; Polygon Servicio Tecnico - Electromedicina</p>
 <hr style="border:2px solid #1B3A5C;margin:10px 0 16px">
 <table><thead><tr>${headerRow}</tr></thead><tbody>${dataRows}</tbody></table>
-</body></html>`
+</div></body></html>`
+
+  const blob = new Blob([html], {type: 'application/msword'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'guardias_' + label.replace(/[\/\s]/g, '_') + '.doc'
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
   const blob = new Blob([html], {type: 'application/msword'})
   const url = URL.createObjectURL(blob)
