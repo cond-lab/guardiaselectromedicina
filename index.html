@@ -42,8 +42,6 @@ tr:nth-child(even) td{background:rgba(255,255,255,0.01)}
 <div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#3a5a7a;font-family:monospace">Cargando...</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.umd.js"></script>
 
 <script>
 const SUPABASE_URL  = 'https://oqcskptqdjqbrsuegdeu.supabase.co'
@@ -68,26 +66,43 @@ function fmtVal(key, val) {
   return String(val)
 }
 
-async function exportWord(avisos, selectedCols, label) {
-  try {
-    var D = docx
-    var cols = selectedCols.filter(function(c){return COL_LABELS[c]})
-    var totalPct = cols.reduce(function(s,c){return s+(COL_PCT[c]||8)},0)
-    var pcts = cols.map(function(c){return Math.floor(((COL_PCT[c]||8)/totalPct)*100)})
-    pcts[pcts.length-1] += 100-pcts.reduce(function(a,b){return a+b},0)
-    var brd = {style:D.BorderStyle.SINGLE,size:1,color:'C8D8E8'}
-    var brds = {top:brd,bottom:brd,left:brd,right:brd}
-    var hRow = new D.TableRow({tableHeader:true,children:cols.map(function(col,i){return new D.TableCell({borders:brds,width:{size:pcts[i],type:D.WidthType.PERCENTAGE},shading:{fill:'1B3A5C',type:D.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},verticalAlign:D.VerticalAlign.CENTER,children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun({text:COL_LABELS[col],bold:true,color:'FFFFFF',font:'Calibri',size:17})]})]})})})
-    var dRows = avisos.map(function(av,ri){return new D.TableRow({children:cols.map(function(col,i){return new D.TableCell({borders:brds,width:{size:pcts[i],type:D.WidthType.PERCENTAGE},shading:{fill:ri%2===0?'FFFFFF':'EEF4FB',type:D.ShadingType.CLEAR},margins:{top:60,bottom:60,left:100,right:100},verticalAlign:D.VerticalAlign.CENTER,children:[new D.Paragraph({children:[new D.TextRun({text:fmtVal(col,av[col]),font:'Calibri',size:16,color:col==='solucionado'?(av[col]?'1a7a3c':'cc2222'):'1a2a3a',bold:col==='solucionado'})]})]})})})} )
-    var table = new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[hRow].concat(dRows)})
-    var resolved = avisos.filter(function(a){return a.solucionado}).length
-    var doc = new D.Document({styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{properties:{page:{size:{width:12240,height:15840,orientation:D.PageOrientation.LANDSCAPE},margin:{top:720,right:720,bottom:720,left:720}}},children:[new D.Paragraph({spacing:{after:80},children:[new D.TextRun({text:'INFORME DE GUARDIAS - ELECTROMEDICINA',bold:true,size:28,font:'Calibri',color:'1B3A5C'})]}),new D.Paragraph({spacing:{after:20},children:[new D.TextRun({text:'Periodo: '+label+'   |   Avisos: '+avisos.length+'   |   Resueltos: '+resolved+'   |   Pendientes: '+(avisos.length-resolved),size:17,font:'Calibri',color:'666666'})]}),new D.Paragraph({spacing:{after:20},children:[new D.TextRun({text:'Generado: '+new Date().toLocaleString('es-ES')+'   |   Polygon Servicio Tecnico - Electromedicina',size:15,font:'Calibri',color:'999999'})]}),new D.Paragraph({border:{bottom:{style:D.BorderStyle.SINGLE,size:12,color:'1B3A5C',space:1}},spacing:{after:280},children:[]}),table]}]})
-    var blob = await D.Packer.toBlob(doc)
-    saveAs(blob, 'guardias_'+label.replace(/[\/\s]/g,'_')+'.docx')
-  } catch(e) {
-    alert('Error Word: '+e.message)
-    console.error(e)
-  }
+function exportWord(avisos, selectedCols, label) {
+  const cols = selectedCols.filter(c => COL_LABELS[c])
+  
+  const headerRow = cols.map(c => `<th style="background:#1B3A5C;color:#fff;padding:8px;border:1px solid #ccc;font-size:11pt">${COL_LABELS[c]}</th>`).join('')
+  
+  const dataRows = avisos.map((av, i) => {
+    const bg = i % 2 === 0 ? '#ffffff' : '#eef4fb'
+    const cells = cols.map(c => `<td style="padding:7px;border:1px solid #ccc;background:${bg};font-size:10pt">${fmtVal(c, av[c])}</td>`).join('')
+    return `<tr>${cells}</tr>`
+  }).join('')
+
+  const resolved = avisos.filter(a => a.solucionado).length
+  const html = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="UTF-8">
+<style>
+  body{font-family:Calibri,sans-serif}
+  h1{color:#1B3A5C;font-size:16pt}
+  p{color:#666;font-size:10pt}
+  table{border-collapse:collapse;width:100%}
+</style>
+</head>
+<body>
+<h1>INFORME DE GUARDIAS - ELECTROMEDICINA</h1>
+<p>Periodo: <b>${label}</b> &nbsp;|&nbsp; Avisos: ${avisos.length} &nbsp;|&nbsp; Resueltos: ${resolved} &nbsp;|&nbsp; Pendientes: ${avisos.length - resolved}</p>
+<p>Generado: ${new Date().toLocaleString('es-ES')} &nbsp;|&nbsp; Polygon Servicio Tecnico - Electromedicina</p>
+<hr style="border:2px solid #1B3A5C;margin:10px 0 16px">
+<table><thead><tr>${headerRow}</tr></thead><tbody>${dataRows}</tbody></table>
+</body></html>`
+
+  const blob = new Blob([html], {type: 'application/msword'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'guardias_' + label.replace(/[\/\s]/g, '_') + '.doc'
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // SHIFT UTILS
